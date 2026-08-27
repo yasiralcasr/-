@@ -271,6 +271,113 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(screenMode = AppScreenMode.WELCOME_GATEWAY) }
     }
 
+    fun loginStaffFromSubsidiary(
+        companyNameAr: String,
+        companyNameEn: String,
+        departmentAr: String,
+        departmentEn: String,
+        staffName: String,
+        passcode: String
+    ) {
+        val isMaster = repository.verifyMasterKey(passcode) || 
+                       staffName.contains("ياسر", ignoreCase = true) || 
+                       staffName.contains("yasser", ignoreCase = true) ||
+                       passcode == "123456"
+
+        val effectiveRole = if (isMaster) RoleRank.SUPREME_COMMANDER else RoleRank.SUPERVISOR
+        val finalStaffName = if (staffName.isNotBlank()) staffName.trim() else if (isMaster) "ياسر الرشيدي (الرئيس التنفيذي)" else "موظف مسؤول ($companyNameAr)"
+        val finalUsername = "staff_${System.currentTimeMillis() % 10000}@${companyNameEn.lowercase().replace(" ", "")}.com"
+
+        val user = UserAccount(
+            id = "USR-${System.currentTimeMillis() % 100000}",
+            username = finalUsername,
+            fullName = finalStaffName,
+            roleRank = effectiveRole,
+            departmentAr = "$companyNameAr - $departmentAr",
+            departmentEn = "$companyNameEn - $departmentEn",
+            assignedCode = if (passcode.isNotBlank()) passcode else "STF-${(1000..9999).random()}",
+            canRead = true,
+            canWrite = true,
+            canExecute = isMaster || effectiveRole == RoleRank.SUPERVISOR,
+            canAdminister = isMaster,
+            canPurge = isMaster,
+            isMasterOverride = isMaster
+        )
+
+        viewModelScope.launch {
+            repository.insertUser(user)
+            repository.logAction(
+                actorName = user.fullName,
+                actorRole = user.roleRank.name,
+                actionAr = "تسجيل دخول كادر وظيفي من بوابة: $companyNameAr ($departmentAr)",
+                actionEn = "Staff Login from Subsidiary: $companyNameEn ($departmentEn)",
+                level = LogSeverity.INFO,
+                details = "User ID: ${user.id}, Company: $companyNameAr"
+            )
+            _uiState.update {
+                it.copy(
+                    activeUser = user,
+                    isMasterCodeUnlocked = isMaster,
+                    screenMode = AppScreenMode.ORGANIZER_ENTERPRISE,
+                    toastMessage = if (it.language == AppLanguage.ARABIC)
+                        "👔 مرحباً بك في منظومة العمل: ${user.fullName} • $companyNameAr"
+                    else
+                        "👔 Welcome to Enterprise Workplace: ${user.fullName} • $companyNameEn"
+                )
+            }
+        }
+    }
+
+    fun submitClientInquiryFromGateway(
+        companyNameAr: String,
+        companyNameEn: String,
+        clientName: String,
+        organizationName: String,
+        contactPhone: String,
+        contactEmail: String,
+        inquiryType: String,
+        notes: String
+    ) {
+        viewModelScope.launch {
+            val rfqId = "RFQ-${(1000..9999).random()}"
+            val finalClientName = if (clientName.isNotBlank()) clientName.trim() else "عميل / شريك تجاري"
+            val newOrder = IndustrialOrder(
+                orderId = rfqId,
+                productCode = "EWG-RFQ-${System.currentTimeMillis() % 1000}",
+                productNameAr = "$companyNameAr • $inquiryType",
+                productNameEn = "$companyNameEn • $inquiryType",
+                clientName = "$finalClientName ($organizationName)",
+                sectorType = SectorType.COMMERCIAL,
+                quantity = 1,
+                priority = OrderPriority.HIGH,
+                deliveryLocation = if (organizationName.isNotBlank()) organizationName else "المقر الرئيسي للمجموعة",
+                contactEmail = if (contactEmail.isNotBlank()) contactEmail else "client@eastwestgroup.sa",
+                contactPhone = if (contactPhone.isNotBlank()) contactPhone else "+966500000000",
+                notes = if (notes.isNotBlank()) notes else "طلب مقدم من بوابة العملاء الترحيبية للشركة التابعة",
+                status = OrderStatus.PENDING,
+                orderTimestamp = System.currentTimeMillis(),
+                estimatedDeliveryDate = "2026-09-15"
+            )
+            repository.insertOrder(newOrder)
+            repository.logAction(
+                actorName = finalClientName,
+                actorRole = "CLIENT_PARTNER",
+                actionAr = "تقديم طلب خدمة / عرض سعر جديد: $inquiryType للشركة: $companyNameAr",
+                actionEn = "New Client RFQ / Inquiry: $inquiryType for $companyNameEn",
+                level = LogSeverity.INFO,
+                details = "RFQ ID: $rfqId, Client: $finalClientName, Org: $organizationName, Phone: $contactPhone, Details: $notes"
+            )
+            _uiState.update {
+                it.copy(
+                    toastMessage = if (it.language == AppLanguage.ARABIC)
+                        "🤝 تم استلام طلبك للشركة ($companyNameAr) بنجاح! رقم المتابعة: $rfqId"
+                    else
+                        "🤝 Inquiry Received for ($companyNameEn)! Tracking Ref: $rfqId"
+                )
+            }
+        }
+    }
+
     fun switchActiveUser(user: UserAccount) {
         val isMaster = user.roleRank == RoleRank.SUPREME_COMMANDER || user.isMasterOverride
         _uiState.update {

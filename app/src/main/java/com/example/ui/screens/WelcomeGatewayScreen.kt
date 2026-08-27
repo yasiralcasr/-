@@ -20,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -35,10 +36,46 @@ import com.example.data.model.UserAccount
 import com.example.ui.theme.*
 
 /**
- * Grand Welcome Gateway Screen (الشاشة الترحيبية الرئيسية - قبل المنظومة)
- * Contains the grand greeting for "تطبيق ياسر الرشيدي الجديد",
- * followed by "دخول الضيوف" (Guest Portal), "استعراض الشركات التابعة", "دخول المنظم",
- * "إنشاء حساب جديد", and "مشاركة وتحميل التطبيق".
+ * Entry portal modes on the Welcome Gateway Screen:
+ * 1. GUEST (دخول الضيوف)
+ * 2. EMPLOYEE (تسجيل دخول الموظفين)
+ * 3. CLIENT (تسجيل دخول العملاء والشركاء)
+ */
+enum class GatewayEntryTab {
+    GUEST,
+    EMPLOYEE,
+    CLIENT
+}
+
+/**
+ * Data model representing each subsidiary's custom design identity on the Welcome Gateway.
+ */
+data class SubsidiaryDesignProfile(
+    val id: String,
+    val nameAr: String,
+    val nameEn: String,
+    val tagAr: String,
+    val tagEn: String,
+    val icon: ImageVector,
+    val primaryColor: Color,
+    val secondaryColor: Color,
+    val employeeDescAr: String,
+    val employeeDescEn: String,
+    val clientDescAr: String,
+    val clientDescEn: String,
+    val clientServicesAr: List<String>,
+    val clientServicesEn: List<String>,
+    val departmentsAr: List<String>,
+    val departmentsEn: List<String>
+)
+
+/**
+ * Grand Welcome Gateway Screen (الواجهة الترحيبية الاحترافية الشاملة)
+ * Designed for:
+ * 1. دخول الضيوف (Guest Portal)
+ * 2. تسجيل دخول الموظفين (Employee Login per Subsidiary)
+ * 3. تسجيل دخول العملاء والشركاء (Client & Partner Portal per Subsidiary)
+ * 4. دخول المنظم والقيادة العليا (Executive Sovereign Key - أ. ياسر الرشيدي)
  */
 @Composable
 fun WelcomeGatewayScreen(
@@ -48,6 +85,8 @@ fun WelcomeGatewayScreen(
     onEnterGuestPortal: () -> Unit,
     onEnterSubsidiariesPortal: () -> Unit = {},
     onEnterOrganizerEnterprise: () -> Unit,
+    onLoginStaffSubsidiary: (String, String, String, String, String, String) -> Unit = { _, _, _, _, _, _ -> },
+    onSubmitClientInquiry: (String, String, String, String, String, String, String, String) -> Unit = { _, _, _, _, _, _, _, _ -> },
     onCreateNewUserAccount: (String, String, RoleRank, String, String) -> Unit = { _, _, _, _, _ -> },
     onSwitchUser: (UserAccount) -> Unit = {},
     onToggleLanguage: () -> Unit,
@@ -57,9 +96,95 @@ fun WelcomeGatewayScreen(
     val context = LocalContext.current
     val isAr = language == AppLanguage.ARABIC
 
+    // Active entry category tab
+    var selectedEntryTab by remember { mutableStateOf(GatewayEntryTab.GUEST) }
+
+    // Dialog states
     var showDigitalProductsDialog by remember { mutableStateOf(false) }
     var showRegisterUserDialog by remember { mutableStateOf(false) }
     var showShareAppDialog by remember { mutableStateOf(false) }
+
+    // Modal states for subsidiary-specific login / client RFQ
+    var activeStaffModalCompany by remember { mutableStateOf<SubsidiaryDesignProfile?>(null) }
+    var activeClientModalCompany by remember { mutableStateOf<SubsidiaryDesignProfile?>(null) }
+
+    // Subsidiary Design Profiles (مراعاة التصميم الخاص بكل شركة تابعة)
+    val subsidiaryProfiles = remember {
+        listOf(
+            SubsidiaryDesignProfile(
+                id = "sub_factory",
+                nameAr = "شركة مصنع الشرق والغرب للصناعة",
+                nameEn = "East & West Industrial Factory Co.",
+                tagAr = "الصناعة والعتاد الثقيل LK-W",
+                tagEn = "Industrial Machinery & LK-W Automation",
+                icon = Icons.Default.PrecisionManufacturing,
+                primaryColor = Gold400,
+                secondaryColor = Color(0xFFD97706),
+                employeeDescAr = "بوابة المهندسين، فنيي خطوط الإنتاج، سلاسل الإمداد، وضبط الجودة LK-W",
+                employeeDescEn = "Engineering, production lines, supply chain & LK-W QA staff",
+                clientDescAr = "طلب عروض أسعار العتاد الصناعي، خطوط الإنتاج الآلية، وقطع الغيار المعالجة",
+                clientDescEn = "Heavy machinery quotes, automated production lines & spare parts",
+                clientServicesAr = listOf("طلب عرض سعر عتاد LK-W", "استشارة هندسية وميكنة", "طلب قطع غيار سبائك فولاذ", "متابعة خط تصنيع معتمد"),
+                clientServicesEn = listOf("LK-W Machinery RFQ", "Engineering Automation Consultation", "Alloy Spare Parts Order", "Production Line Tracking"),
+                departmentsAr = listOf("الهندسة والإنتاج الصناعي", "سلاسل الإمداد والتوريد", "إدارة المصنع والتشغيل", "الجودة والسلامة المهنية"),
+                departmentsEn = listOf("Industrial Engineering & Production", "Supply Chain & Logistics", "Factory Administration", "QA & Occupational Safety")
+            ),
+            SubsidiaryDesignProfile(
+                id = "sub_rafiq",
+                nameAr = "شركة رفيق السند لتجارة الجملة والتجزئة",
+                nameEn = "Rafeeq Al-Sanad Wholesale & Retail Co.",
+                tagAr = "التجارة الكبرى وسلاسل التوزيع",
+                tagEn = "B2B Wholesale & Retail Distribution",
+                icon = Icons.Default.Storefront,
+                primaryColor = Cyan400,
+                secondaryColor = Color(0xFF0284C7),
+                employeeDescAr = "بوابة مسؤولي المستودعات المركزية، إدارة المبيعات، المحاسبة، وأسطول الشحن",
+                employeeDescEn = "Central warehousing, sales management, accounting & freight fleet",
+                clientDescAr = "عقود التوريد التجاري بالجملة للشركات، الشحن السريع، وحزم المتاجر ومنافذ البيع",
+                clientDescEn = "B2B enterprise supply contracts, express logistics & retail packaging bundles",
+                clientServicesAr = listOf("عقد توريد تجاري مفتوح", "طلب بضائع استهلاكية بالجملة", "خدمات المستودعات والشحن السريع", "حزم المتاجر ومنافذ البيع"),
+                clientServicesEn = listOf("Open B2B Supply Contract", "Wholesale Consumer Goods Order", "Warehousing & Express Freight", "Retail Packaging Bundles"),
+                departmentsAr = listOf("الإدارة التجارية والمبيعات", "المستودعات المركزية واللوجستيات", "علاقات العملاء والشركاء", "المحاسبة والتحصيل"),
+                departmentsEn = listOf("Commercial Sales & Admin", "Central Warehousing & Logistics", "Client & Partner Relations", "Accounting & Billing")
+            ),
+            SubsidiaryDesignProfile(
+                id = "sub_qimmat",
+                nameAr = "شركة قمة الدرع للحلويات والمكسرات",
+                nameEn = "Qimmat Al-Dir' Sweets & Nuts Co.",
+                tagAr = "الحلويات الملكية والمكسرات الفاخرة",
+                tagEn = "Luxury Confectionery & Premium Nuts",
+                icon = Icons.Default.Cake,
+                primaryColor = Color(0xFFF59E0B),
+                secondaryColor = Color(0xFFD97706),
+                employeeDescAr = "بوابة مسؤولي الإنتاج الغذائي، الضيافة الفندقية، ضبط المواصفات، وإدارة المعارض",
+                employeeDescEn = "Gourmet food production, hospitality sales, food standards & outlets",
+                clientDescAr = "عقود توريد الفنادق وصالات كبار الشخصيات، تشكيلات الضيافة، وعلب الهدايا التراثية",
+                clientDescEn = "Hotel & VIP lounge catering supply, gourmet hospitality & luxury heritage gift boxes",
+                clientServicesAr = listOf("عقد توريد فنادق وضيافة كبرى", "طلبية حلويات ملكية للمناسبات", "مكسرات فاخرة مفرغة من الهواء", "علب هدايا وتوزيعات مخصصة"),
+                clientServicesEn = listOf("Hotel & Hospitality Contract", "Royal Confectionery Event Order", "Premium Vacuum Nuts Pack", "Customized Gourmet Gift Boxes"),
+                departmentsAr = listOf("الإنتاج الغذائي والعمليات", "المبيعات والضيافة الفندقية", "ضبط الجودة والمواصفات", "التسويق والمعارض"),
+                departmentsEn = listOf("Food Operations & Production", "Corporate & Hospitality Sales", "Food Quality Standards", "Marketing & Outlets")
+            ),
+            SubsidiaryDesignProfile(
+                id = "sub_hq",
+                nameAr = "الإدارة العامة والقيادة التنفيذية",
+                nameEn = "Executive Leadership & Group HQ",
+                tagAr = "الحوكمة والإشراف السيادي",
+                tagEn = "Corporate Governance & Executive HQ",
+                icon = Icons.Default.AccountBalance,
+                primaryColor = Color(0xFFE2E8F0),
+                secondaryColor = Gold400,
+                employeeDescAr = "بوابة القيادة العليا، الشؤون القانونية والتقنية، والاستثمار الأجنبي",
+                employeeDescEn = "Executive leadership, legal counsel, technology & foreign investment",
+                clientDescAr = "الشراكات الاستراتيجية الدولية وعلاقات المستثمرين",
+                clientDescEn = "International strategic partnerships & investor relations",
+                clientServicesAr = listOf("طلب شراكة استراتيجية", "استثمار وتوسع دولي", "خدمات الاستشارات والحوكمة"),
+                clientServicesEn = listOf("Strategic Partnership Request", "International Investment", "Corporate Governance Advisory"),
+                departmentsAr = listOf("مكتب الرئيس التنفيذي", "الشؤون القانونية والتقنية", "إدارة الاستثمار الأجنبي", "حوكمة الشركات التابعة"),
+                departmentsEn = listOf("Office of the CEO", "Legal & Tech Affairs", "Foreign Investment Directorate", "Subsidiaries Governance")
+            )
+        )
+    }
 
     // Subtle pulsing animation for executive halo
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -89,7 +214,7 @@ fun WelcomeGatewayScreen(
             .navigationBarsPadding()
             .testTag("welcome_gateway_screen")
     ) {
-        // Decorative background geometric grid lines & glow
+        // Decorative background glow
         Canvas(modifier = Modifier.fillMaxSize()) {
             drawCircle(
                 brush = Brush.radialGradient(
@@ -97,7 +222,7 @@ fun WelcomeGatewayScreen(
                         Gold500.copy(alpha = 0.12f * glowAlpha),
                         Color.Transparent
                     ),
-                    center = center.copy(y = size.height * 0.28f),
+                    center = center.copy(y = size.height * 0.22f),
                     radius = size.width * 0.85f
                 )
             )
@@ -107,11 +232,12 @@ fun WelcomeGatewayScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Top Bar: Language switcher and Digital Products Showcase
+            // ==========================================
+            // TOP ACTION BAR
+            // ==========================================
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -123,205 +249,507 @@ fun WelcomeGatewayScreen(
                     shape = RoundedCornerShape(20.dp),
                     border = BorderStroke(1.dp, Slate700),
                     colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Navy800.copy(alpha = 0.8f),
+                        containerColor = Navy800.copy(alpha = 0.85f),
                         contentColor = Gold400
                     ),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
                     modifier = Modifier.testTag("gateway_lang_toggle")
                 ) {
                     Icon(
                         imageVector = Icons.Default.Language,
                         contentDescription = "Language",
                         tint = Cyan400,
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(15.dp)
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isAr) "English" else "العربية",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 11.5.sp)
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        )
                     )
                 }
 
-                // Company Digital Products Button
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    color = Navy800.copy(alpha = 0.85f),
-                    border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(Cyan400, Gold400))),
-                    modifier = Modifier
-                        .clickable { showDigitalProductsDialog = true }
-                        .testTag("gateway_digital_products_btn")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                // Top Right Utility Actions
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Digital Products Button
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = Navy800.copy(alpha = 0.85f),
+                        border = BorderStroke(1.dp, Brush.horizontalGradient(listOf(Cyan400, Gold400))),
+                        modifier = Modifier
+                            .clickable { showDigitalProductsDialog = true }
+                            .testTag("gateway_digital_products_btn")
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Devices,
+                                contentDescription = "Digital Products",
+                                tint = Cyan300,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = if (isAr) "المنتجات الرقمية" else "Digital Portfolio",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = Gold300,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp
+                                )
+                            )
+                        }
+                    }
+
+                    // Share App Button
+                    IconButton(
+                        onClick = { showShareAppDialog = true },
+                        modifier = Modifier
+                            .size(34.dp)
+                            .clip(CircleShape)
+                            .background(Navy800)
+                            .border(1.dp, Gold400.copy(alpha = 0.6f), CircleShape)
+                            .testTag("btn_top_share_app")
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Devices,
-                            contentDescription = "Digital Products",
-                            tint = Cyan300,
-                            modifier = Modifier.size(15.dp)
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share",
+                            tint = Gold400,
+                            modifier = Modifier.size(16.dp)
                         )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = if (isAr) "منتجات الشركة الرقمية" else "Digital Products",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Gold300,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.5.sp
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            // ==========================================
+            // CENTRAL GRAND EMBLEM & PRESTIGIOUS HEADER
+            // ==========================================
+            Box(
+                modifier = Modifier
+                    .size(86.dp)
+                    .clip(CircleShape)
+                    .background(
+                        Brush.radialGradient(
+                            colors = listOf(
+                                Gold500.copy(alpha = 0.25f),
+                                Navy900
                             )
                         )
+                    )
+                    .border(2.dp, Brush.linearGradient(listOf(Gold300, Gold600, Gold400)), CircleShape)
+                    .shadow(16.dp, CircleShape, spotColor = Gold500),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_company_logo),
+                    contentDescription = "EWG Seal",
+                    modifier = Modifier
+                        .size(66.dp)
+                        .clip(CircleShape)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Sovereign Status Badge
+            Surface(
+                shape = RoundedCornerShape(50.dp),
+                color = Gold500.copy(alpha = 0.12f),
+                border = BorderStroke(1.dp, Gold400.copy(alpha = 0.5f)),
+                modifier = Modifier.padding(horizontal = 8.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(6.dp)
+                            .clip(CircleShape)
+                            .background(Gold400)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isAr) "بوابة الدخول الذكية • مجموعة الشركات والمنظومات" else "Smart Gateway • Group & Subsidiaries Enterprise",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Gold300,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Grand Greeting Header (Explicit User Directive)
+            Text(
+                text = if (isAr) "أهلاً بكم في تطبيق ياسر الرشيدي الجديد" else "Welcome to the New Yasser Al-Rashidi Application",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 28.sp
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp)
+                    .testTag("welcome_gateway_title")
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = if (isAr)
+                    "مجموعة شركة الشرق والغرب العالمية والشركات التابعة"
+                else
+                    "East & West Global Group & Subsidiaries",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Cyan300,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center
+                )
+            )
+
+            Spacer(modifier = Modifier.height(18.dp))
+
+            // ==========================================
+            // 3-WAY SMART ENTRY CATEGORY SELECTOR TABS
+            // (1) دخول الضيوف  (2) دخول الموظفين  (3) دخول العملاء
+            // ==========================================
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Navy800,
+                border = BorderStroke(1.dp, Slate700),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Tab 1: Guest Entry (دخول الضيوف)
+                    EntryTabButton(
+                        title = if (isAr) "دخول الضيوف" else "Guest Entry",
+                        icon = Icons.Outlined.PersonOutline,
+                        isSelected = selectedEntryTab == GatewayEntryTab.GUEST,
+                        activeColor = Cyan400,
+                        modifier = Modifier.weight(1f),
+                        onClick = { selectedEntryTab = GatewayEntryTab.GUEST }
+                    )
+
+                    // Tab 2: Employee Login (تسجيل دخول الموظفين)
+                    EntryTabButton(
+                        title = if (isAr) "دخول الموظفين" else "Staff Login",
+                        icon = Icons.Default.Badge,
+                        isSelected = selectedEntryTab == GatewayEntryTab.EMPLOYEE,
+                        activeColor = Gold400,
+                        modifier = Modifier.weight(1f),
+                        onClick = { selectedEntryTab = GatewayEntryTab.EMPLOYEE }
+                    )
+
+                    // Tab 3: Client Login (تسجيل دخول العملاء)
+                    EntryTabButton(
+                        title = if (isAr) "دخول العملاء" else "Client Portal",
+                        icon = Icons.Default.Handshake,
+                        isSelected = selectedEntryTab == GatewayEntryTab.CLIENT,
+                        activeColor = Color(0xFF38BDF8),
+                        modifier = Modifier.weight(1f),
+                        onClick = { selectedEntryTab = GatewayEntryTab.CLIENT }
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ==========================================
+            // DYNAMIC PORTAL CONTENT BASED ON ACTIVE TAB
+            // ==========================================
+            AnimatedContent(
+                targetState = selectedEntryTab,
+                transitionSpec = {
+                    fadeIn(animationSpec = tween(250)) togetherWith fadeOut(animationSpec = tween(200))
+                },
+                label = "gateway_tab_content"
+            ) { targetTab ->
+                when (targetTab) {
+                    // ----------------------------------------
+                    // 1. GUEST PORTAL SECTION (دخول الضيوف)
+                    // ----------------------------------------
+                    GatewayEntryTab.GUEST -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(14.dp)
+                        ) {
+                            // Primary Guest Access Card
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = Navy800,
+                                border = BorderStroke(1.5.dp, Cyan400),
+                                shadowElevation = 10.dp,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onEnterGuestPortal() }
+                                    .testTag("btn_guest_access_gateway")
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(52.dp)
+                                            .clip(RoundedCornerShape(14.dp))
+                                            .background(Cyan500.copy(alpha = 0.2f))
+                                            .border(1.5.dp, Cyan400, RoundedCornerShape(14.dp)),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Outlined.PersonOutline,
+                                            contentDescription = "Guest",
+                                            tint = Cyan300,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
+
+                                    Spacer(modifier = Modifier.width(14.dp))
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(verticalAlignment = Alignment.CenterVertically) {
+                                            Text(
+                                                text = if (isAr) "بوابة الضيوف والزوار" else "Guest & Public Portal",
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = Color.White,
+                                                    fontSize = 16.sp
+                                                )
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Surface(
+                                                shape = RoundedCornerShape(4.dp),
+                                                color = GreenSuccess.copy(alpha = 0.15f)
+                                            ) {
+                                                Text(
+                                                    text = if (isAr) "متاح فوراً" else "ACTIVE",
+                                                    style = MaterialTheme.typography.labelSmall.copy(
+                                                        color = GreenSuccess,
+                                                        fontWeight = FontWeight.Bold,
+                                                        fontSize = 9.sp
+                                                    ),
+                                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                                )
+                                            }
+                                        }
+
+                                        Spacer(modifier = Modifier.height(4.dp))
+
+                                        Text(
+                                            text = if (isAr)
+                                                "استعراض شامل لخدمات المجموعة، كتالوج المنتجات الصناعية، نبذة عن الشركات، وحساب تكاليف التوريد"
+                                            else
+                                                "Explore public features, LK-W product catalog, subsidiary overview & direct supply inquiries",
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = Slate300,
+                                                fontSize = 11.5.sp,
+                                                lineHeight = 16.sp
+                                            )
+                                        )
+                                    }
+
+                                    Icon(
+                                        imageVector = if (isAr) Icons.AutoMirrored.Filled.ArrowBack else Icons.AutoMirrored.Filled.ArrowForward,
+                                        contentDescription = null,
+                                        tint = Cyan300,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+
+                            // Quick Guest Highlights
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                GuestHighlightChip(
+                                    icon = Icons.Default.PrecisionManufacturing,
+                                    label = if (isAr) "كتالوج العتاد" else "Machinery Catalog",
+                                    color = Gold400,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = onEnterGuestPortal
+                                )
+                                GuestHighlightChip(
+                                    icon = Icons.Default.Apartment,
+                                    label = if (isAr) "الشركات التابعة" else "Subsidiaries",
+                                    color = Cyan300,
+                                    modifier = Modifier.weight(1f),
+                                    onClick = onEnterSubsidiariesPortal
+                                )
+                                GuestHighlightChip(
+                                    icon = Icons.Default.ContactPhone,
+                                    label = if (isAr) "التواصل المباشر" else "Contact Us",
+                                    color = Color(0xFF38BDF8),
+                                    modifier = Modifier.weight(1f),
+                                    onClick = onEnterGuestPortal
+                                )
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------
+                    // 2. EMPLOYEE LOGIN SECTION (تسجيل دخول الموظفين)
+                    // ----------------------------------------
+                    GatewayEntryTab.EMPLOYEE -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = if (isAr) "اختر شركتك التابعة لتسجيل الدخول ككادر وظيفي:" else "Select your subsidiary company to log in as staff:",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = Gold300,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            )
+
+                            // 4 Subsidiary Employee Cards
+                            subsidiaryProfiles.forEach { profile ->
+                                SubsidiaryEmployeeCard(
+                                    profile = profile,
+                                    isAr = isAr,
+                                    onClick = { activeStaffModalCompany = profile }
+                                )
+                            }
+                        }
+                    }
+
+                    // ----------------------------------------
+                    // 3. CLIENT PORTAL SECTION (تسجيل دخول العملاء والشركاء)
+                    // ----------------------------------------
+                    GatewayEntryTab.CLIENT -> {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = if (isAr) "بوابات العملاء والشركاء التجاريين حسب الشركة التابعة:" else "Client & Partner Portals by Subsidiary Company:",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = Cyan300,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            )
+
+                            // 3 Subsidiary Client Cards (Factory, Rafeeq, Qimmat)
+                            subsidiaryProfiles.filter { it.id != "sub_hq" }.forEach { profile ->
+                                SubsidiaryClientCard(
+                                    profile = profile,
+                                    isAr = isAr,
+                                    onClick = { activeClientModalCompany = profile }
+                                )
+                            }
+                        }
                     }
                 }
             }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Central Grand Emblem & Grand Title Section
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+            // ==========================================
+            // SOVEREIGN EXECUTIVE COMMAND ACCESS (أ. ياسر الرشيدي)
+            // ==========================================
+            Surface(
+                shape = RoundedCornerShape(18.dp),
+                color = Navy900,
+                border = BorderStroke(
+                    1.8.dp,
+                    Brush.linearGradient(listOf(Gold300, Gold500, Gold600, Gold400))
+                ),
+                shadowElevation = 12.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .clickable {
+                        if (isMasterUnlocked) {
+                            onEnterOrganizerEnterprise()
+                        } else {
+                            onOpenMasterKeyDialog()
+                        }
+                    }
+                    .testTag("btn_organizer_access_gateway")
             ) {
-                // Imperial Golden Emblem
                 Box(
                     modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
+                        .fillMaxWidth()
                         .background(
-                            Brush.radialGradient(
+                            Brush.horizontalGradient(
                                 colors = listOf(
-                                    Gold500.copy(alpha = 0.25f),
-                                    Navy900
+                                    Gold500.copy(alpha = 0.15f),
+                                    Navy900,
+                                    Gold500.copy(alpha = 0.10f)
                                 )
                             )
                         )
-                        .border(2.dp, Brush.linearGradient(listOf(Gold300, Gold600, Gold400)), CircleShape)
-                        .shadow(16.dp, CircleShape, spotColor = Gold500),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_company_logo),
-                        contentDescription = "EWG Seal",
-                        modifier = Modifier
-                            .size(76.dp)
-                            .clip(CircleShape)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                // Prestigious Status Badge
-                Surface(
-                    shape = RoundedCornerShape(50.dp),
-                    color = Gold500.copy(alpha = 0.12f),
-                    border = BorderStroke(1.dp, Gold400.copy(alpha = 0.5f)),
-                    modifier = Modifier.padding(horizontal = 8.dp)
+                        .padding(16.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(7.dp)
-                                .clip(CircleShape)
-                                .background(Gold400)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = if (isAr) "المنظومة السيادية للتحكم والأتمتة الذكية • الإصدار المعتمد" else "Supreme Sovereign Automation & Control System",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Gold300,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 10.5.sp
-                            )
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Grand Greeting Header (Explicit User Directive)
-                Text(
-                    text = if (isAr) "أهلاً بكم في تطبيق ياسر الرشيدي الجديد" else "Welcome to the New Yasser Al-Rashidi Application",
-                    style = MaterialTheme.typography.headlineMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        color = Color.White,
-                        fontSize = 22.sp,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 32.sp
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .testTag("welcome_gateway_title")
-                )
-            }
-
-            Spacer(modifier = Modifier.height(28.dp))
-
-            // Action Portals Section: (1) دخول الضيوف  (2) دخول المنظم
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // ==========================================
-                // BUTTON 1: دخول الضيوف (Guest Access - Active)
-                // ==========================================
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Navy800,
-                    border = BorderStroke(1.5.dp, Cyan500.copy(alpha = 0.65f)),
-                    shadowElevation = 8.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onEnterGuestPortal() }
-                        .testTag("btn_guest_access_gateway")
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Guest Icon Badge
-                        Box(
-                            modifier = Modifier
-                                .size(54.dp)
+                                .size(50.dp)
                                 .clip(RoundedCornerShape(14.dp))
-                                .background(Cyan500.copy(alpha = 0.18f))
-                                .border(1.5.dp, Cyan400, RoundedCornerShape(14.dp)),
+                                .background(
+                                    Brush.radialGradient(
+                                        listOf(
+                                            Gold500.copy(alpha = 0.35f),
+                                            Navy900
+                                        )
+                                    )
+                                )
+                                .border(1.8.dp, Gold400, RoundedCornerShape(14.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Outlined.PersonOutline,
-                                contentDescription = "Guest",
-                                tint = Cyan300,
+                                imageVector = Icons.Default.AdminPanelSettings,
+                                contentDescription = "Supreme Command",
+                                tint = Gold400,
                                 modifier = Modifier.size(28.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(16.dp))
+                        Spacer(modifier = Modifier.width(14.dp))
 
                         Column(modifier = Modifier.weight(1f)) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text(
-                                    text = if (isAr) "دخول الضيوف" else "Guest Access",
+                                    text = if (isAr) "دخول المنظم والقيادة العليا" else "Executive Command Access",
                                     style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Color.White,
-                                        fontSize = 17.sp
+                                        fontWeight = FontWeight.Black,
+                                        color = Gold300,
+                                        fontSize = 16.sp
                                     )
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.width(6.dp))
                                 Surface(
                                     shape = RoundedCornerShape(4.dp),
-                                    color = GreenSuccess.copy(alpha = 0.15f)
+                                    color = Gold500.copy(alpha = 0.2f)
                                 ) {
                                     Text(
-                                        text = if (isAr) "متاح الآن" else "ACTIVE",
+                                        text = if (isMasterUnlocked) (if (isAr) "👑 مفتوح" else "UNLOCKED") else (if (isAr) "🔒 سيادي" else "MASTER"),
                                         style = MaterialTheme.typography.labelSmall.copy(
-                                            color = GreenSuccess,
+                                            color = Gold300,
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 9.sp
                                         ),
@@ -330,446 +758,227 @@ fun WelcomeGatewayScreen(
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(3.dp))
 
                             Text(
                                 text = if (isAr)
-                                    "دخول مخصص للزوار والضيوف لاستعراض الخدمات ومساحة العمل الخاصة"
+                                    "صلاحية الرئيس التنفيذي أ. ياسر الرشيدي لإدارة المنظومات، الصلاحيات، والتوريد LK-W"
                                 else
-                                    "Dedicated public workspace for guests and visitors to explore features",
+                                    "Supreme Commander & CEO Yasser Al-Rashidi dashboard, LK-W logistics & governance",
                                 style = MaterialTheme.typography.bodySmall.copy(
-                                    color = Slate300,
-                                    fontSize = 11.5.sp,
-                                    lineHeight = 16.sp
+                                    color = Slate200,
+                                    fontSize = 11.sp,
+                                    lineHeight = 15.sp
                                 )
                             )
                         }
 
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(CircleShape)
+                                .background(Gold500.copy(alpha = 0.2f))
+                                .border(1.dp, Gold400, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isAr) Icons.AutoMirrored.Filled.ArrowBack else Icons.AutoMirrored.Filled.ArrowForward,
+                                contentDescription = null,
+                                tint = Gold400,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ==========================================
+            // DUAL ACTION BAR: (1) إنشاء حساب  (2) دليل الشركات
+            // ==========================================
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Register Account Button
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Navy800,
+                    border = BorderStroke(1.2.dp, Cyan400),
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { showRegisterUserDialog = true }
+                        .testTag("btn_register_new_account_gateway")
+                ) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
                         Icon(
-                            imageVector = if (isAr) Icons.AutoMirrored.Filled.ArrowBack else Icons.AutoMirrored.Filled.ArrowForward,
-                            contentDescription = null,
+                            imageVector = Icons.Default.PersonAdd,
+                            contentDescription = "Create Account",
                             tint = Cyan300,
-                            modifier = Modifier.size(22.dp)
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = if (isAr) "إنشاء حساب جديد" else "Register Account",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
                         )
                     }
                 }
 
-                // ==========================================
-                // BUTTON 1.5: استعراض الشركات التابعة (Subsidiaries Showcase)
-                // ==========================================
+                // Subsidiaries Directory Button
                 Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Navy900,
-                    border = BorderStroke(
-                        1.5.dp,
-                        Brush.horizontalGradient(
-                            listOf(
-                                Gold400,
-                                Cyan400,
-                                Gold500
-                            )
-                        )
-                    ),
-                    shadowElevation = 10.dp,
+                    shape = RoundedCornerShape(12.dp),
+                    color = Navy800,
+                    border = BorderStroke(1.2.dp, Gold400),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
                         .clickable { onEnterSubsidiariesPortal() }
                         .testTag("btn_subsidiaries_showcase_gateway")
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Navy800,
-                                        Navy900.copy(alpha = 0.95f),
-                                        Navy800
-                                    )
-                                )
-                            )
-                            .padding(16.dp)
+                    Row(
+                        modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Icon Badge
-                            Box(
-                                modifier = Modifier
-                                    .size(50.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(
-                                        Brush.linearGradient(
-                                            listOf(
-                                                Gold500.copy(alpha = 0.25f),
-                                                Cyan400.copy(alpha = 0.2f)
-                                            )
-                                        )
-                                    )
-                                    .border(1.5.dp, Gold400, RoundedCornerShape(12.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Apartment,
-                                    contentDescription = "Subsidiaries",
-                                    tint = Gold400,
-                                    modifier = Modifier.size(28.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(14.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = if (isAr) "استعراض الشركات التابعة" else "Browse Subsidiaries",
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = Gold300,
-                                            fontSize = 16.5.sp
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = Gold500.copy(alpha = 0.2f),
-                                        border = BorderStroke(0.5.dp, Gold400)
-                                    ) {
-                                        Text(
-                                            text = if (isAr) "✨ شركاء النجاح" else "PARTNERS",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                color = Gold300,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 9.sp
-                                            ),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Text(
-                                    text = if (isAr)
-                                        "فروع ومصانع المجموعة، بوابات الموظفين والعملاء، والتواصل المباشر مع القيادة"
-                                    else
-                                        "Group subsidiaries, staff & client portals, and direct executive contact",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Slate200,
-                                        fontSize = 11.5.sp,
-                                        lineHeight = 16.sp
-                                    )
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(Gold500.copy(alpha = 0.15f))
-                                    .border(1.dp, Gold400.copy(alpha = 0.6f), CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (isAr) Icons.AutoMirrored.Filled.ArrowBack else Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
-                                    tint = Gold400,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ==========================================
-                // BUTTON 2: دخول المنظم (Supreme Sovereign / Organizer Access - Majestic & High Prestige)
-                // ==========================================
-                Surface(
-                    shape = RoundedCornerShape(18.dp),
-                    color = Navy900,
-                    border = BorderStroke(
-                        2.dp,
-                        Brush.linearGradient(
-                            listOf(
-                                Gold300,
-                                Gold500,
-                                Gold600,
-                                Gold400
-                            )
+                        Icon(
+                            imageVector = Icons.Default.Apartment,
+                            contentDescription = "Subsidiaries",
+                            tint = Gold400,
+                            modifier = Modifier.size(16.dp)
                         )
-                    ),
-                    shadowElevation = 14.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .clickable { onEnterOrganizerEnterprise() }
-                        .testTag("btn_organizer_access_gateway")
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        Gold500.copy(alpha = 0.12f),
-                                        Navy900,
-                                        Gold500.copy(alpha = 0.08f)
-                                    )
-                                )
-                            )
-                            .padding(18.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // Organizer Sovereign Icon Badge
-                            Box(
-                                modifier = Modifier
-                                    .size(54.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(
-                                        Brush.radialGradient(
-                                            listOf(
-                                                Gold500.copy(alpha = 0.35f),
-                                                Navy900
-                                            )
-                                        )
-                                    )
-                                    .border(1.8.dp, Gold400, RoundedCornerShape(14.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AdminPanelSettings,
-                                    contentDescription = "Organizer",
-                                    tint = Gold400,
-                                    modifier = Modifier.size(30.dp)
-                                )
-                            }
-
-                            Spacer(modifier = Modifier.width(16.dp))
-
-                            Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(
-                                        text = if (isAr) "دخول المنظم والقيادة" else "Organizer & Command Access",
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Black,
-                                            color = Gold300,
-                                            fontSize = 17.sp
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(4.dp),
-                                        color = Gold500.copy(alpha = 0.2f)
-                                    ) {
-                                        Text(
-                                            text = if (isAr) "👑 سيادي" else "SOVEREIGN",
-                                            style = MaterialTheme.typography.labelSmall.copy(
-                                                color = Gold300,
-                                                fontWeight = FontWeight.Bold,
-                                                fontSize = 9.sp
-                                            ),
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.height(4.dp))
-
-                                Text(
-                                    text = if (isAr)
-                                        "لوحة التحكم الإدارية الشاملة، المنظومات الذكية، التوريد LK-W، وإدارة الصلاحيات"
-                                    else
-                                        "Executive dashboard, 7-tab command suite, LK-W logistics & role governance",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = Slate200,
-                                        fontSize = 11.5.sp,
-                                        lineHeight = 16.sp
-                                    )
-                                )
-                            }
-
-                            Box(
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .clip(CircleShape)
-                                    .background(Gold500.copy(alpha = 0.2f))
-                                    .border(1.dp, Gold400, CircleShape),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = if (isAr) Icons.AutoMirrored.Filled.ArrowBack else Icons.AutoMirrored.Filled.ArrowForward,
-                                    contentDescription = null,
-                                    tint = Gold400,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // ==========================================
-                // DUAL QUICK ACTIONS: (1) إنشاء حساب جديد  (2) مشاركة وتحميل التطبيق
-                // ==========================================
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Create New Account Button
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = Navy800,
-                        border = BorderStroke(1.2.dp, Cyan400),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { showRegisterUserDialog = true }
-                            .testTag("btn_register_new_account_gateway")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PersonAdd,
-                                contentDescription = "Create Account",
-                                tint = Cyan300,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isAr) "إنشاء حساب جديد" else "Create Account",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.5.sp
-                                )
-                            )
-                        }
-                    }
-
-                    // Share and Download App Button
-                    Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = Navy800,
-                        border = BorderStroke(1.2.dp, Gold400),
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(RoundedCornerShape(14.dp))
-                            .clickable { showShareAppDialog = true }
-                            .testTag("btn_share_download_app_gateway")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(vertical = 12.dp, horizontal = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "Share App",
-                                tint = Gold400,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = if (isAr) "مشاركة وتحميل" else "Share & Download",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    color = Gold300,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.5.sp
-                                )
-                            )
-                        }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Footer info
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp, bottom = 4.dp)
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Navy800.copy(alpha = 0.65f),
-                    border = BorderStroke(0.8.dp, Gold500.copy(alpha = 0.35f)),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
+                        Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = if (isAr)
-                                "قيادة وإشراف الرئيس التنفيذي للشركة والشركات التابعة"
-                            else
-                                "Under the Leadership & Supervision of the CEO of the Group & Subsidiaries",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Gold400,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            ),
-                            textAlign = TextAlign.Center
-                        )
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-                        
-                        Text(
-                            text = if (isAr)
-                                "الأستاذ القانوني والخبير التقني / ياسر الرشيدي\nومدير الاستثمار الأجنبي / شوكت فيتا"
-                            else
-                                "Legal Counsel & Tech Expert / Yasser Al-Rashidi\nForeign Investment Director / Shawkat Fita",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                color = Color.White,
-                                fontSize = 11.5.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                lineHeight = 18.sp
-                            ),
-                            textAlign = TextAlign.Center
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
-
-                        Text(
-                            text = if (isAr)
-                                "البوابة الرقمية الشاملة لإدارة المنظومات في الشركات"
-                            else
-                                "The Comprehensive Digital Gateway for Enterprise Systems Management",
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                color = Cyan300,
-                                fontSize = 11.sp,
+                            text = if (isAr) "دليل الشركات التابعة" else "Subsidiaries Guide",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                color = Gold300,
                                 fontWeight = FontWeight.Bold,
-                                lineHeight = 16.sp
-                            ),
-                            textAlign = TextAlign.Center
+                                fontSize = 12.sp
+                            )
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = if (isAr) "شركة الشرق والغرب العالمية • جميع الحقوق محفوظة © 2026" else "East & West Global Enterprise • All Rights Reserved © 2026",
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = Slate400,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Medium
-                    ),
-                    textAlign = TextAlign.Center
-                )
             }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // ==========================================
+            // FOOTER & EXECUTIVE LEADERSHIP ATTRIBUTION
+            // ==========================================
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = Navy800.copy(alpha = 0.65f),
+                border = BorderStroke(0.8.dp, Gold500.copy(alpha = 0.35f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = if (isAr)
+                            "قيادة وإشراف الرئيس التنفيذي للشركة والشركات التابعة"
+                        else
+                            "Under the Leadership & Supervision of the CEO of the Group & Subsidiaries",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Gold400,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = if (isAr)
+                            "الأستاذ القانوني والخبير التقني / ياسر الرشيدي\nومدير الاستثمار الأجنبي / شوكت فيتا"
+                        else
+                            "Legal Counsel & Tech Expert / Yasser Al-Rashidi\nForeign Investment Director / Shawkat Fita",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Color.White,
+                            fontSize = 11.5.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 18.sp
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Text(
+                        text = if (isAr)
+                            "البوابة الرقمية الشاملة لإدارة المنظومات في الشركات التابعة"
+                        else
+                            "Comprehensive Digital Management Portal for Subsidiaries",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Cyan300,
+                            fontSize = 10.5.sp,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (isAr) "شركة الشرق والغرب العالمية • جميع الحقوق محفوظة © 2026" else "East & West Global Enterprise • All Rights Reserved © 2026",
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = Slate400,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                textAlign = TextAlign.Center
+            )
         }
 
-        // Digital Products Showcase Modal Dialog
+        // ==========================================
+        // DIALOGS & MODAL INTERACTIONS
+        // ==========================================
+
+        // 1. Employee Login Dialog for Selected Subsidiary
+        activeStaffModalCompany?.let { profile ->
+            SubsidiaryStaffLoginDialog(
+                profile = profile,
+                isAr = isAr,
+                onDismiss = { activeStaffModalCompany = null },
+                onLogin = { compAr, compEn, deptAr, deptEn, name, pass ->
+                    activeStaffModalCompany = null
+                    onLoginStaffSubsidiary(compAr, compEn, deptAr, deptEn, name, pass)
+                }
+            )
+        }
+
+        // 2. Client / Partner Portal & RFQ Dialog for Selected Subsidiary
+        activeClientModalCompany?.let { profile ->
+            SubsidiaryClientInquiryDialog(
+                profile = profile,
+                isAr = isAr,
+                onDismiss = { activeClientModalCompany = null },
+                onSubmit = { compAr, compEn, clientName, orgName, phone, email, type, notes ->
+                    activeClientModalCompany = null
+                    onSubmitClientInquiry(compAr, compEn, clientName, orgName, phone, email, type, notes)
+                },
+                onExploreCatalog = {
+                    activeClientModalCompany = null
+                    onEnterSubsidiariesPortal()
+                }
+            )
+        }
+
+        // 3. Digital Products Showcase Dialog
         if (showDigitalProductsDialog) {
             DigitalProductsShowcaseDialog(
                 isAr = isAr,
@@ -785,7 +994,7 @@ fun WelcomeGatewayScreen(
             )
         }
 
-        // Register Account Dialog for Guests & Staff
+        // 4. Register Account Dialog for Guests & Staff
         if (showRegisterUserDialog) {
             GatewayRegisterAccountDialog(
                 isAr = isAr,
@@ -797,7 +1006,7 @@ fun WelcomeGatewayScreen(
             )
         }
 
-        // Share and Download App Dialog
+        // 5. Share App Dialog
         if (showShareAppDialog) {
             GatewayShareAppDialog(
                 isAr = isAr,
@@ -814,6 +1023,735 @@ fun WelcomeGatewayScreen(
             )
         }
     }
+}
+
+/**
+ * Top Segmented Tab Button
+ */
+@Composable
+private fun EntryTabButton(
+    title: String,
+    icon: ImageVector,
+    isSelected: Boolean,
+    activeColor: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = if (isSelected) activeColor.copy(alpha = 0.18f) else Color.Transparent,
+        border = BorderStroke(1.dp, if (isSelected) activeColor else Color.Transparent),
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 8.dp, horizontal = 4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = title,
+                tint = if (isSelected) activeColor else Slate400,
+                modifier = Modifier.size(18.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = if (isSelected) Color.White else Slate400,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                    fontSize = 11.sp
+                ),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+/**
+ * Small highlight chip for Guest quick actions
+ */
+@Composable
+private fun GuestHighlightChip(
+    icon: ImageVector,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = Navy800,
+        border = BorderStroke(1.dp, color.copy(alpha = 0.4f)),
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 10.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = color,
+                modifier = Modifier.size(20.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 10.5.sp
+                ),
+                textAlign = TextAlign.Center,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+/**
+ * Subsidiary Employee Card with custom branding & direct staff login button
+ */
+@Composable
+private fun SubsidiaryEmployeeCard(
+    profile: SubsidiaryDesignProfile,
+    isAr: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Navy800,
+        border = BorderStroke(1.2.dp, profile.primaryColor.copy(alpha = 0.65f)),
+        shadowElevation = 4.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(46.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(profile.primaryColor.copy(alpha = 0.15f))
+                    .border(1.2.dp, profile.primaryColor, RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = profile.icon,
+                    contentDescription = profile.nameEn,
+                    tint = profile.primaryColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (isAr) profile.nameAr else profile.nameEn,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 13.5.sp
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(2.dp))
+
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = profile.primaryColor.copy(alpha = 0.12f)
+                ) {
+                    Text(
+                        text = if (isAr) profile.tagAr else profile.tagEn,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = profile.primaryColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.5.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = if (isAr) profile.employeeDescAr else profile.employeeDescEn,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Slate300,
+                        fontSize = 10.5.sp,
+                        lineHeight = 14.sp
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = profile.primaryColor,
+                modifier = Modifier.clip(RoundedCornerShape(8.dp))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isAr) "دخول" else "Login",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Navy900,
+                            fontWeight = FontWeight.Black,
+                            fontSize = 11.sp
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Subsidiary Client & Partner Card with customized RFQ/Order entry
+ */
+@Composable
+private fun SubsidiaryClientCard(
+    profile: SubsidiaryDesignProfile,
+    isAr: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = Navy800,
+        border = BorderStroke(1.2.dp, profile.primaryColor.copy(alpha = 0.65f)),
+        shadowElevation = 4.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onClick)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(profile.primaryColor.copy(alpha = 0.15f))
+                        .border(1.2.dp, profile.primaryColor, RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = profile.icon,
+                        contentDescription = profile.nameEn,
+                        tint = profile.primaryColor,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = if (isAr) profile.nameAr else profile.nameEn,
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 13.5.sp
+                        )
+                    )
+                    Text(
+                        text = if (isAr) "بوابة العملاء والشركاء التجاريين" else "Client & Partner Portal",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = profile.primaryColor,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 10.sp
+                        )
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = profile.primaryColor.copy(alpha = 0.18f),
+                    border = BorderStroke(1.dp, profile.primaryColor)
+                ) {
+                    Text(
+                        text = if (isAr) "طلب خدمة" else "Request",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = profile.primaryColor,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = if (isAr) profile.clientDescAr else profile.clientDescEn,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    color = Slate300,
+                    fontSize = 11.sp,
+                    lineHeight = 15.sp
+                )
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Quick Service Chips
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                val services = if (isAr) profile.clientServicesAr.take(2) else profile.clientServicesEn.take(2)
+                services.forEach { service ->
+                    Surface(
+                        shape = RoundedCornerShape(6.dp),
+                        color = Navy900,
+                        border = BorderStroke(0.8.dp, Slate700)
+                    ) {
+                        Text(
+                            text = "• $service",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = Slate200,
+                                fontSize = 9.5.sp
+                            ),
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Dialog for Subsidiary Staff / Employee Login
+ */
+@Composable
+private fun SubsidiaryStaffLoginDialog(
+    profile: SubsidiaryDesignProfile,
+    isAr: Boolean,
+    onDismiss: () -> Unit,
+    onLogin: (companyNameAr: String, companyNameEn: String, deptAr: String, deptEn: String, staffName: String, passcode: String) -> Unit
+) {
+    var staffName by remember { mutableStateOf("") }
+    var passcode by remember { mutableStateOf("") }
+    var selectedDeptIndex by remember { mutableIntStateOf(0) }
+
+    val departments = if (isAr) profile.departmentsAr else profile.departmentsEn
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = {
+                    val deptAr = profile.departmentsAr.getOrElse(selectedDeptIndex) { "الإدارة العامة" }
+                    val deptEn = profile.departmentsEn.getOrElse(selectedDeptIndex) { "General Admin" }
+                    onLogin(profile.nameAr, profile.nameEn, deptAr, deptEn, staffName, passcode)
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = profile.primaryColor,
+                    contentColor = Navy900
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(
+                    text = if (isAr) "تسجيل الدخول ومتابعة العمل" else "Login to Workspace",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onDismiss,
+                border = BorderStroke(1.dp, Slate700),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Slate300),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(text = if (isAr) "إلغاء" else "Cancel")
+            }
+        },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(profile.primaryColor.copy(alpha = 0.2f))
+                        .border(1.dp, profile.primaryColor, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = profile.icon,
+                        contentDescription = null,
+                        tint = profile.primaryColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = if (isAr) "دخول كادر الموظفين" else "Staff Member Login",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.5.sp
+                        )
+                    )
+                    Text(
+                        text = if (isAr) profile.nameAr else profile.nameEn,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = profile.primaryColor,
+                            fontSize = 11.sp
+                        )
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Name or Staff ID
+                OutlinedTextField(
+                    value = staffName,
+                    onValueChange = { staffName = it },
+                    label = { Text(if (isAr) "اسم الموظف / الرقم الوظيفي" else "Staff Name / ID") },
+                    placeholder = { Text(if (isAr) "مثال: م. أحمد أو ياسر الرشيدي" else "e.g. Eng. Ahmed") },
+                    leadingIcon = { Icon(Icons.Default.Badge, contentDescription = null, tint = profile.primaryColor) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = profile.primaryColor,
+                        unfocusedBorderColor = Slate700,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = profile.primaryColor,
+                        unfocusedLabelColor = Slate400
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Passcode / Master Code
+                OutlinedTextField(
+                    value = passcode,
+                    onValueChange = { passcode = it },
+                    label = { Text(if (isAr) "كلمة المرور / الرمز السري" else "Passcode / PIN") },
+                    placeholder = { Text(if (isAr) "أدخل الرمز السري المعتمد" else "Enter assigned passcode") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null, tint = profile.primaryColor) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = profile.primaryColor,
+                        unfocusedBorderColor = Slate700,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = profile.primaryColor,
+                        unfocusedLabelColor = Slate400
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Department Selector
+                Text(
+                    text = if (isAr) "القسم / الإدارة التابعة:" else "Department / Division:",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = profile.primaryColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.5.sp
+                    )
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    departments.forEachIndexed { index, dept ->
+                        val isSelected = selectedDeptIndex == index
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) profile.primaryColor.copy(alpha = 0.18f) else Navy800,
+                            border = BorderStroke(1.dp, if (isSelected) profile.primaryColor else Slate700),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedDeptIndex = index }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { selectedDeptIndex = index },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = profile.primaryColor,
+                                        unselectedColor = Slate400
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = dept,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = if (isSelected) Color.White else Slate300,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        containerColor = Navy900,
+        shape = RoundedCornerShape(18.dp)
+    )
+}
+
+/**
+ * Dialog for Subsidiary Client Inquiry / RFQ / Order Submission
+ */
+@Composable
+private fun SubsidiaryClientInquiryDialog(
+    profile: SubsidiaryDesignProfile,
+    isAr: Boolean,
+    onDismiss: () -> Unit,
+    onSubmit: (companyNameAr: String, companyNameEn: String, clientName: String, orgName: String, phone: String, email: String, type: String, notes: String) -> Unit,
+    onExploreCatalog: () -> Unit
+) {
+    var clientName by remember { mutableStateOf("") }
+    var organizationName by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var selectedServiceIndex by remember { mutableIntStateOf(0) }
+    var notes by remember { mutableStateOf("") }
+
+    val services = if (isAr) profile.clientServicesAr else profile.clientServicesEn
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Button(
+                onClick = {
+                    val finalClientName = clientName.ifBlank { if (isAr) "عميل معتمد" else "Valued Client" }
+                    val serviceType = services.getOrElse(selectedServiceIndex) { "خدمة عامة" }
+                    onSubmit(profile.nameAr, profile.nameEn, finalClientName, organizationName, phone, email, serviceType, notes)
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = profile.primaryColor,
+                    contentColor = Navy900
+                ),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(
+                    text = if (isAr) "إرسال طلب التوريد / العرض" else "Submit RFQ / Order",
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            OutlinedButton(
+                onClick = onExploreCatalog,
+                border = BorderStroke(1.dp, Cyan400),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Cyan300),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Text(text = if (isAr) "استعراض الكتالوج" else "Browse Catalog")
+            }
+        },
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(CircleShape)
+                        .background(profile.primaryColor.copy(alpha = 0.2f))
+                        .border(1.dp, profile.primaryColor, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Handshake,
+                        contentDescription = null,
+                        tint = profile.primaryColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = if (isAr) "بوابة العملاء والشركاء" else "Client & Partner Portal",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 15.5.sp
+                        )
+                    )
+                    Text(
+                        text = if (isAr) profile.nameAr else profile.nameEn,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = profile.primaryColor,
+                            fontSize = 11.sp
+                        )
+                    )
+                }
+            }
+        },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // Client Name
+                OutlinedTextField(
+                    value = clientName,
+                    onValueChange = { clientName = it },
+                    label = { Text(if (isAr) "اسم العميل / مسؤول المشتريات" else "Client / Procurement Lead") },
+                    placeholder = { Text(if (isAr) "مثال: م. خالد المنصور" else "e.g. Khalid") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = profile.primaryColor) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = profile.primaryColor,
+                        unfocusedBorderColor = Slate700,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = profile.primaryColor,
+                        unfocusedLabelColor = Slate400
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Organization / Company Name
+                OutlinedTextField(
+                    value = organizationName,
+                    onValueChange = { organizationName = it },
+                    label = { Text(if (isAr) "اسم الشركة أو الجهة الطالبة" else "Enterprise / Company Name") },
+                    placeholder = { Text(if (isAr) "مثال: شركة المقاولات الحديثة" else "e.g. Modern Contracting Co.") },
+                    leadingIcon = { Icon(Icons.Default.Business, contentDescription = null, tint = profile.primaryColor) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = profile.primaryColor,
+                        unfocusedBorderColor = Slate700,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = profile.primaryColor,
+                        unfocusedLabelColor = Slate400
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Phone
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text(if (isAr) "رقم الهاتف / الواتساب للتواصل" else "Phone / WhatsApp Contact") },
+                    placeholder = { Text(if (isAr) "مثال: 0503026675" else "+966 50 302 6675") },
+                    leadingIcon = { Icon(Icons.Default.Phone, contentDescription = null, tint = profile.primaryColor) },
+                    singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = profile.primaryColor,
+                        unfocusedBorderColor = Slate700,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = profile.primaryColor,
+                        unfocusedLabelColor = Slate400
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Service Requested
+                Text(
+                    text = if (isAr) "نوع الخدمة أو الطلب المطلوب:" else "Requested Service / RFQ:",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        color = profile.primaryColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 11.5.sp
+                    )
+                )
+
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    services.forEachIndexed { index, service ->
+                        val isSelected = selectedServiceIndex == index
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected) profile.primaryColor.copy(alpha = 0.18f) else Navy800,
+                            border = BorderStroke(1.dp, if (isSelected) profile.primaryColor else Slate700),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { selectedServiceIndex = index }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = isSelected,
+                                    onClick = { selectedServiceIndex = index },
+                                    colors = RadioButtonDefaults.colors(
+                                        selectedColor = profile.primaryColor,
+                                        unselectedColor = Slate400
+                                    )
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = service,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = if (isSelected) Color.White else Slate300,
+                                        fontSize = 11.5.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Additional Notes
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text(if (isAr) "ملاحظات إضافية أو مواصفات خاصة" else "Additional Specifications / Notes") },
+                    placeholder = { Text(if (isAr) "الكميات المطلوبة، الموقع، وقت التسليم..." else "Quantities, delivery timeframe...") },
+                    maxLines = 3,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = profile.primaryColor,
+                        unfocusedBorderColor = Slate700,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        focusedLabelColor = profile.primaryColor,
+                        unfocusedLabelColor = Slate400
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        containerColor = Navy900,
+        shape = RoundedCornerShape(18.dp)
+    )
 }
 
 /**
@@ -906,9 +1844,9 @@ private fun DigitalProductsShowcaseDialog(
             ) {
                 Text(
                     text = if (isAr)
-                        "تستعرض مجموعة الشرق والغرب العالمية حزمة المنظومات والحلول الرقمية المتكاملة لحوكمة وإدارة وتشغيل الشركات:"
+                        "تضم منظومة الشرق والغرب العالمية محفظة تقنية متكاملة صُممت بأعلى المعايير السيادية لإدارة التوريد والإنتاج الصناعي والرقابة الذكية:"
                     else
-                        "East & West Global presents its sovereign suite of digital platforms and operational governance solutions:",
+                        "East & West Global encompasses an advanced technology suite engineered for industrial supply automation & sovereign governance:",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = Color.White.copy(alpha = 0.9f),
                         fontSize = 12.sp,
@@ -916,68 +1854,55 @@ private fun DigitalProductsShowcaseDialog(
                     )
                 )
 
-                // Product Item 1: Sovereign Core
-                DigitalProductItemCard(
-                    title = if (isAr) "منظومة السيادة والحوكمة الرقمية (Sovereign Core)" else "Sovereign Governance Core Engine",
-                    description = if (isAr)
-                        "محرك الرقابة التنفيذية المباشرة، الصلاحيات المشفرة، وإدارة تدقيق الشركات التابعة بالكامل."
-                    else
-                        "Executive direct governance, encrypted hierarchy, and full audit control across all subsidiaries.",
-                    badge = if (isAr) "سيادي • Root" else "Sovereign • Root",
-                    icon = Icons.Default.Security,
-                    badgeColor = Gold400,
-                    isAr = isAr
-                )
-
-                // Product Item 2: Smart Cloud ERP
-                DigitalProductItemCard(
-                    title = if (isAr) "منصة الحوسبة وإدارة المنظومات الذكية (Cloud ERP Suite)" else "Enterprise Cloud ERP & Automation Suite",
-                    description = if (isAr)
-                        "أتمتة العمليات، إدارة الحسابات المتزامنة، وإصدار التقارير اللحظية وإدارة الفرق الميدانية."
-                    else
-                        "Operational workflow automation, synchronized accounts, real-time analytics, and field roster management.",
-                    badge = if (isAr) "سحابي • Cloud" else "Cloud ERP",
-                    icon = Icons.Default.CloudQueue,
-                    badgeColor = Cyan400,
-                    isAr = isAr
-                )
-
-                // Product Item 3: LK-W Industrial Hub
-                DigitalProductItemCard(
-                    title = if (isAr) "بوابة التوريد الصناعي الذكية LK-W (Industrial Supply Hub)" else "LK-W Industrial Supply & Equipment Hub",
-                    description = if (isAr)
-                        "منصة رقمية لطلب وتتبع خطوط الإنتاج والعتاد الصناعي المتخصص وقطع الغيار اللوجستية."
-                    else
-                        "Digital platform for industrial machinery procurement, lifecycle tracking, and logistics supply lines.",
-                    badge = if (isAr) "صناعي • Hardware" else "Industrial LK-W",
+                // Product 1: LK-W SCADA Engine
+                ProductShowcaseCard(
+                    titleAr = "منظومة التحكم والتشغيل الآلي LK-W SCADA",
+                    titleEn = "LK-W SCADA Industrial Automation Engine",
+                    descAr = "برمجيات مدمجة لإدارة خطوط الإنتاج، المراقبة الحرارية اللحظية، ومطابقة معايير ISO-9001.",
+                    descEn = "Embedded SCADA software for heavy industrial lines, thermal telemetry, and ISO-9001 compliance.",
+                    badgeAr = "صناعي • هيدروليكي",
+                    badgeEn = "Industrial Servo",
                     icon = Icons.Default.PrecisionManufacturing,
-                    badgeColor = GreenSuccess,
+                    accentColor = Gold400,
                     isAr = isAr
                 )
 
-                // Product Item 4: Kashef Sentinel
-                DigitalProductItemCard(
-                    title = if (isAr) "نظام كاشف والقارات الأمني (Kashef Sentinel Security)" else "Kashef Sentinel & Continental Security",
-                    description = if (isAr)
-                        "منظومة كشف التهديدات السيبرانية، تحصين مسارات البيانات، والربط الجغرافي الموحد."
-                    else
-                        "Cyber threat detection, data path firewall isolation, and multi-continental unified routing.",
-                    badge = if (isAr) "حماية • Sentinel" else "Sentinel Security",
+                // Product 2: Kashef AI Guard
+                ProductShowcaseCard(
+                    titleAr = "درع كاشف للأمن السيبراني والرقابة",
+                    titleEn = "Kashef AI Cybersecurity Shield",
+                    descAr = "نظام متقدم للكشف عن التهديدات والأنشطة المشبوهة، تشفير البروتوكولات، وحماية البيانات السيادية.",
+                    descEn = "AI security shield for threat isolation, cryptographic TLS 1.3 verification, and audit trail protection.",
+                    badgeAr = "سيبراني • حماية متقدمة",
+                    badgeEn = "Active Defense",
                     icon = Icons.Default.Shield,
-                    badgeColor = Color(0xFFA855F7),
+                    accentColor = Cyan400,
                     isAr = isAr
                 )
 
-                // Product Item 5: AI Engine
-                DigitalProductItemCard(
-                    title = if (isAr) "محرك الذكاء الاصطناعي للأعمال (Enterprise AI Engine)" else "Enterprise AI Intelligence Engine",
-                    description = if (isAr)
-                        "تحليلات تنبؤية متقدمة، استشارات تشغيلية فورية، ومعالجة ذكية لسلاسل الإمداد."
-                    else
-                        "Advanced predictive intelligence, instantaneous operational advisory, and supply chain smart analytics.",
-                    badge = if (isAr) "ذكاء اصطناعي • AI" else "AI Powered",
-                    icon = Icons.Default.AutoAwesome,
-                    badgeColor = OrangeWarning,
+                // Product 3: Altruism Pool
+                ProductShowcaseCard(
+                    titleAr = "محرك تحلية العوائد والعطاء الإنساني 33%",
+                    titleEn = "Altruism 33% Revenue Desalination Engine",
+                    descAr = "خوارزمية ذكية لاقتطاع 33% من عوائد العقود الصناعية تلقائياً وتوجيهها للمشاريع الخيرية والتنموية.",
+                    descEn = "Automated smart contract engine allocating 33% of industrial revenue directly to humanitarian relief.",
+                    badgeAr = "عطاء وإحسان",
+                    badgeEn = "Charity Pool",
+                    icon = Icons.Default.VolunteerActivism,
+                    accentColor = Color(0xFF10B981),
+                    isAr = isAr
+                )
+
+                // Product 4: Multi-Subsidiary Command Suite
+                ProductShowcaseCard(
+                    titleAr = "لوحة قيادة الشركات التابعة وحوكمة العقود",
+                    titleEn = "Multi-Subsidiary Governance & B2B Hub",
+                    descAr = "منصة مركزية لإدارة مصنع الشرق والغرب، رفيق السند، وقمة الدرع تحت إشراف الرئيس التنفيذي.",
+                    descEn = "Unified hub governing Factory, Rafeeq Al-Sanad, and Qimmat Al-Dir' under CEO executive supervision.",
+                    badgeAr = "حوكمة وإدارة",
+                    badgeEn = "Multi-Tenant",
+                    icon = Icons.Default.Apartment,
+                    accentColor = Gold500,
                     isAr = isAr
                 )
             }
@@ -987,88 +1912,92 @@ private fun DigitalProductsShowcaseDialog(
     )
 }
 
+/**
+ * Reusable Product Card inside the Digital Showcase Dialog
+ */
 @Composable
-private fun DigitalProductItemCard(
-    title: String,
-    description: String,
-    badge: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    badgeColor: Color,
+private fun ProductShowcaseCard(
+    titleAr: String,
+    titleEn: String,
+    descAr: String,
+    descEn: String,
+    badgeAr: String,
+    badgeEn: String,
+    icon: ImageVector,
+    accentColor: Color,
     isAr: Boolean
 ) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(10.dp),
         color = Navy800,
-        border = BorderStroke(1.dp, Slate700)
+        border = BorderStroke(1.dp, accentColor.copy(alpha = 0.4f)),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp)
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.Top
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(accentColor.copy(alpha = 0.15f))
+                    .border(1.dp, accentColor, RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
             ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(10.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(28.dp)
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(badgeColor.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = icon,
-                            contentDescription = null,
-                            tint = badgeColor,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = title,
-                        style = MaterialTheme.typography.titleSmall.copy(
+                        text = if (isAr) titleAr else titleEn,
+                        style = MaterialTheme.typography.labelMedium.copy(
                             color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 12.5.sp
                         ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        modifier = Modifier.weight(1f)
                     )
+
+                    Surface(
+                        shape = RoundedCornerShape(4.dp),
+                        color = accentColor.copy(alpha = 0.2f)
+                    ) {
+                        Text(
+                            text = if (isAr) badgeAr else badgeEn,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = accentColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 9.sp
+                            ),
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                        )
+                    }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = badgeColor.copy(alpha = 0.15f),
-                    border = BorderStroke(0.5.dp, badgeColor.copy(alpha = 0.5f))
-                ) {
-                    Text(
-                        text = badge,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = badgeColor,
-                            fontSize = 9.5.sp,
-                            fontWeight = FontWeight.Bold
-                        ),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = if (isAr) descAr else descEn,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Slate300,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
                     )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = Slate300,
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp
                 )
-            )
+            }
         }
     }
 }
@@ -1084,7 +2013,7 @@ fun GatewayRegisterAccountDialog(
 ) {
     var username by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
-    var selectedOrgType by remember { mutableIntStateOf(0) } // 0: ضيف/زائر, 1: مصنع الشرق والغرب, 2: رفيق السند, 3: قمة الدرع, 4: الإدارة العامة
+    var selectedOrgType by remember { mutableIntStateOf(0) }
     var selectedRole by remember { mutableStateOf<RoleRank>(RoleRank.OBSERVER) }
 
     val orgOptions = if (isAr) listOf(
@@ -1106,7 +2035,7 @@ fun GatewayRegisterAccountDialog(
         confirmButton = {
             Button(
                 onClick = {
-                    val finalUsername = if (username.isNotBlank()) username.trim() else "guest_${(1000..9999).random()}"
+                    val finalUsername = if (username.isNotBlank()) username.trim() else "user_${(1000..9999).random()}"
                     val finalFullName = if (fullName.isNotBlank()) fullName.trim() else if (isAr) "مستخدم جديد" else "New Member"
                     val (deptAr, deptEn) = when (selectedOrgType) {
                         0 -> "بوابة الضيوف والزوار" to "Guest & Visitor Portal"
@@ -1170,7 +2099,7 @@ fun GatewayRegisterAccountDialog(
                         )
                     )
                     Text(
-                        text = if (isAr) "للضيوف وموظفي الشركات التابعة والقيادة" else "For Guests, Subsidiary Staff & Leaders",
+                        text = if (isAr) "للضيوف والعملاء وموظفي الشركات التابعة" else "For Guests, Clients & Subsidiary Staff",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Gold400,
                             fontSize = 11.sp
@@ -1241,7 +2170,7 @@ fun GatewayRegisterAccountDialog(
                     value = username,
                     onValueChange = { username = it },
                     label = { Text(if (isAr) "اسم المستخدم أو البريد الإلكتروني" else "Username or Email") },
-                    placeholder = { Text(if (isAr) "مثال: fahad@eastwest.com" else "e.g. user@domain.com") },
+                    placeholder = { Text(if (isAr) "مثال: user@eastwest.com" else "e.g. user@domain.com") },
                     leadingIcon = { Icon(Icons.Default.AlternateEmail, contentDescription = null, tint = Gold400) },
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
@@ -1333,9 +2262,9 @@ fun GatewayShareAppDialog(
 ) {
     val shareAppUrl = "https://ais-pre-zj2gz34qlbwfg6pmdvjkzu-672470930952.europe-west2.run.app"
     val defaultShareText = if (isAr) {
-        "🌟 رابط تشغيل وتجربة تطبيق ياسر الرشيدي الجديد (منظومة شركة الشرق والغرب العالمية والشركات التابعة):\n$shareAppUrl\n\nبوابة السيادة • استعراض الشركات التابعة • بوابة الضيوف • حوكمة المنظومات"
+        "🌟 تطبيق ياسر الرشيدي الجديد (منظومة شركة الشرق والغرب العالمية والشركات التابعة):\n$shareAppUrl\n\nبوابة السيادة • استعراض الشركات التابعة • بوابة الضيوف والعملاء والموظفين"
     } else {
-        "🌟 Live Web & Mobile Access to the New Yasser Al-Rashidi Enterprise App (East & West Global & Subsidiaries):\n$shareAppUrl"
+        "🌟 Yasser Al-Rashidi Enterprise App (East & West Global & Subsidiaries):\n$shareAppUrl"
     }
 
     AlertDialog(
@@ -1398,7 +2327,7 @@ fun GatewayShareAppDialog(
                         )
                     )
                     Text(
-                        text = if (isAr) "للإرسال للضيوف والشركات التابعة والإدارات" else "For Guests, Subsidiaries & Executives",
+                        text = if (isAr) "للإرسال للضيوف والعملاء والشركات التابعة" else "For Guests, Clients & Subsidiaries",
                         style = MaterialTheme.typography.bodySmall.copy(
                             color = Slate300,
                             fontSize = 11.sp
@@ -1416,9 +2345,9 @@ fun GatewayShareAppDialog(
             ) {
                 Text(
                     text = if (isAr)
-                        "يمكنك مشاركة هذا الرابط مع الضيوف، مديري الشركات التابعة، والموظفين لتشغيل وتجربة التطبيق مباشرة:"
+                        "يمكنك مشاركة هذا الرابط مع الضيوف، العملاء، ومديري وموظفي الشركات التابعة لتشغيل وتجربة التطبيق مباشرة:"
                     else
-                        "Share this link with guests, subsidiary executives, and teams to run the application immediately:",
+                        "Share this link with guests, clients, subsidiary executives, and teams to run the application immediately:",
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = Color.White.copy(alpha = 0.9f),
                         fontSize = 12.sp,

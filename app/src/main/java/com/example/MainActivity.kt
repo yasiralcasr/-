@@ -62,6 +62,12 @@ class MainActivity : ComponentActivity() {
                                 onEnterGuestPortal = { viewModel.enterGuestPortal() },
                                 onEnterSubsidiariesPortal = { viewModel.enterSubsidiariesPortal() },
                                 onEnterOrganizerEnterprise = { viewModel.enterOrganizerEnterprise() },
+                                onLoginStaffSubsidiary = { compAr, compEn, deptAr, deptEn, name, pass ->
+                                    viewModel.loginStaffFromSubsidiary(compAr, compEn, deptAr, deptEn, name, pass)
+                                },
+                                onSubmitClientInquiry = { compAr, compEn, clientName, orgName, phone, email, type, notes ->
+                                    viewModel.submitClientInquiryFromGateway(compAr, compEn, clientName, orgName, phone, email, type, notes)
+                                },
                                 onCreateNewUserAccount = { username, fullName, role, deptAr, deptEn ->
                                     viewModel.createUserAccount(username, fullName, role, deptAr, deptEn)
                                 },
