@@ -1,0 +1,6 @@
+{
+  "name": "شركة الشرق والغرب العالمية",
+  "description": "منصة شركة الشرق والغرب العالمية لإدارة وإنشاء البرامج والحلول الرقمية والمنتجات الصناعية ونظام الصلاحيات الشامل",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
