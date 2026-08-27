@@ -37,6 +37,8 @@ fun IndustrialLkwScreen(
     isMasterUnlocked: Boolean,
     onOpenOrderDialog: (IndustrialProduct) -> Unit,
     onUpdateOrderStatus: (orderId: String, newStatus: OrderStatus) -> Unit,
+    isSyncing: Boolean = false,
+    onSyncRetrofit: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val isAr = language == AppLanguage.ARABIC
@@ -112,7 +114,7 @@ fun IndustrialLkwScreen(
                         }
                     }
 
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             text = if (isAr)
                                 "خط الإنتاج والتوريد المباشر للمعدات الثقيلة، التوربينات الهيدروليكية، الأذرع الروبوتية، وأنظمة SCADA الصناعية المتوافقة مع معايير CE و ISO العالمية."
@@ -123,6 +125,70 @@ fun IndustrialLkwScreen(
                                 lineHeight = 18.sp
                             )
                         )
+
+                        // Retrofit Sync Bar
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Navy900,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Cyan500.copy(alpha = 0.4f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                                    Icon(
+                                        imageVector = Icons.Default.CloudSync,
+                                        contentDescription = "Sync",
+                                        tint = Cyan400,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Column {
+                                        Text(
+                                            text = if (isAr) "واجهة Retrofit السحابية الموثقة" else "Authenticated Retrofit API Client",
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Cyan400)
+                                        )
+                                        Text(
+                                            text = if (isAr) "مفتاح الأمان: mLj1Ri... | Bearer Token" else "Key: mLj1Ri... | Bearer Token",
+                                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp, color = Slate400)
+                                        )
+                                    }
+                                }
+
+                                FilledTonalButton(
+                                    onClick = onSyncRetrofit,
+                                    enabled = !isSyncing,
+                                    colors = ButtonDefaults.filledTonalButtonColors(
+                                        containerColor = Cyan500.copy(alpha = 0.2f),
+                                        contentColor = Cyan400
+                                    ),
+                                    shape = RoundedCornerShape(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                                    modifier = Modifier.testTag("sync_retrofit_products_button")
+                                ) {
+                                    if (isSyncing) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(14.dp),
+                                            color = Cyan400,
+                                            strokeWidth = 2.dp
+                                        )
+                                    } else {
+                                        Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = if (isAr) "مزامنة الكتالوج" else "Sync Catalog",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

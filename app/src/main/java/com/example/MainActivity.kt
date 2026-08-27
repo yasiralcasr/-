@@ -196,7 +196,9 @@ class MainActivity : ComponentActivity() {
                                         onOpenOrderDialog = { viewModel.openOrderDialog(it) },
                                         onUpdateOrderStatus = { orderId, newStatus ->
                                             viewModel.updateOrderStatus(orderId, newStatus)
-                                        }
+                                        },
+                                        isSyncing = uiState.isRemoteApiSyncing,
+                                        onSyncRetrofit = { viewModel.syncProductsFromExternalPlatform() }
                                     )
                                 }
 
@@ -212,12 +214,17 @@ class MainActivity : ComponentActivity() {
                                         totalRevenueProcessed = uiState.totalRevenueProcessed,
                                         language = uiState.language,
                                         activeUser = uiState.activeUser,
+                                        remoteDelegations = uiState.remoteDelegations,
+                                        isRemoteApiSyncing = uiState.isRemoteApiSyncing,
+                                        queriedWathqRecord = uiState.queriedWathqRecord,
                                         onSelectContinent = { viewModel.selectContinent(it) },
                                         onQueryChange = { viewModel.setMagicWindowQuery(it) },
                                         onDetectedUrlChange = { viewModel.setMagicWindowDetectedUrl(it) },
                                         onProcessMagicWindow = { q, u -> viewModel.processMagicWindow(q, u) },
                                         onInjectAltruismRevenue = { amt, cur -> viewModel.injectAltruismRevenue(amt, cur) },
-                                        onClearQuarantine = { viewModel.clearQuarantinedThreats() }
+                                        onClearQuarantine = { viewModel.clearQuarantinedThreats() },
+                                        onSyncDelegations = { viewModel.syncDelegationServicesFromExternalPlatform() },
+                                        onQueryWathq = { serviceCode, queryNum -> viewModel.queryRemoteWathqRecord(serviceCode, queryNum) }
                                     )
                                 }
 

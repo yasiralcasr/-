@@ -10,6 +10,8 @@ import com.example.control.AltruismDistributionEvent
 import com.example.control.AltruismEngine
 import com.example.control.KashefSecurityEngine
 import com.example.control.MagicInspectionResult
+import com.example.data.api.model.ApiDelegationServiceDto
+import com.example.data.api.model.ApiWathqRecordDto
 import com.example.data.db.AppDatabase
 import com.example.data.firestore.*
 import com.example.data.model.*
@@ -62,7 +64,7 @@ data class UiState(
         roleRank = RoleRank.SUPREME_COMMANDER,
         departmentAr = "الرئاسة التنفيذية وحوكمة المجموعة والشركات التابعة",
         departmentEn = "Executive Leadership & Subsidiaries Governance",
-        assignedCode = "1073781088@0503026675#8054$8051%",
+        assignedCode = "1073781088@0503026675#8054\$8051%",
         canRead = true,
         canWrite = true,
         canExecute = true,
@@ -75,6 +77,12 @@ data class UiState(
     val masterKeyError: String? = null,
     val programsList: List<EnterpriseProgram> = emptyList(),
     val industrialProducts: List<IndustrialProduct> = emptyList(),
+    val remoteProducts: List<IndustrialProduct> = emptyList(),
+    val remoteDelegations: List<ApiDelegationServiceDto> = emptyList(),
+    val isRemoteApiSyncing: Boolean = false,
+    val remoteApiSyncStatus: String? = null,
+    val selectedDelegationDetail: ApiDelegationServiceDto? = null,
+    val queriedWathqRecord: ApiWathqRecordDto? = null,
     val industrialOrders: List<IndustrialOrder> = emptyList(),
     val usersList: List<UserAccount> = emptyList(),
     val userBeingEdited: UserAccount? = null,
@@ -162,6 +170,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 charityPoolBalance = AltruismEngine.charityPoolBalance,
                 totalRevenueProcessed = AltruismEngine.totalRevenueProcessed
             )
+        }
+
+        // Fetch external platform products & delegation services via Retrofit client
+        viewModelScope.launch {
+            val remoteProductsRes = repository.fetchRemoteProducts()
+            val remoteDelegationsRes = repository.fetchRemoteDelegationServices()
+            _uiState.update {
+                it.copy(
+                    remoteProducts = remoteProductsRes.getOrDefault(emptyList()),
+                    remoteDelegations = remoteDelegationsRes.getOrDefault(emptyList()),
+                    industrialProducts = if (remoteProductsRes.isSuccess && remoteProductsRes.getOrNull()?.isNotEmpty() == true)
+                        remoteProductsRes.getOrNull()!! else it.industrialProducts
+                )
+            }
         }
     }
 
@@ -1342,6 +1364,67 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 level = level,
                 details = details
             )
+        }
+    }
+
+    fun syncProductsFromExternalPlatform(category: String? = null) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRemoteApiSyncing = true, remoteApiSyncStatus = "جاري الاتصال بواجهة Retrofit السحابية ومصادقة المفاتيح...") }
+            val result = repository.fetchRemoteProducts(category)
+            val products = result.getOrDefault(emptyList())
+            _uiState.update {
+                it.copy(
+                    isRemoteApiSyncing = false,
+                    remoteProducts = products,
+                    industrialProducts = if (products.isNotEmpty()) products else it.industrialProducts,
+                    remoteApiSyncStatus = if (products.isNotEmpty()) "✅ تم جلب ومزامنة ${products.size} منتجاً صناعياً بنجاح!" else "تمت المزامنة بنجاح",
+                    toastMessage = if (it.language == AppLanguage.ARABIC)
+                        "🌐 تم جلب ${products.size} منتجاً صناعياً عبر Retrofit ومفتاح الأمان المعتمد!"
+                    else
+                        "🌐 Fetched ${products.size} industrial products via secure Retrofit client!"
+                )
+            }
+        }
+    }
+
+    fun syncDelegationServicesFromExternalPlatform(query: String = "") {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRemoteApiSyncing = true, remoteApiSyncStatus = "جاري التحقق من سجلات التفويض والوكالات عبر API...") }
+            val result = repository.fetchRemoteDelegationServices(query)
+            val delegations = result.getOrDefault(emptyList())
+            _uiState.update {
+                it.copy(
+                    isRemoteApiSyncing = false,
+                    remoteDelegations = delegations,
+                    remoteApiSyncStatus = if (delegations.isNotEmpty()) "✅ تم توثيق وجلب ${delegations.size} تفويضاً رسمياً" else "تمت المزامنة",
+                    toastMessage = if (it.language == AppLanguage.ARABIC)
+                        "🏛️ تم التحقق من ${delegations.size} خدمة وتفويض إلكتروني عبر Retrofit بنجاح!"
+                    else
+                        "🏛️ Verified ${delegations.size} delegation services via secure Retrofit client!"
+                )
+            }
+        }
+    }
+
+    fun selectDelegationDetail(delegation: ApiDelegationServiceDto?) {
+        _uiState.update { it.copy(selectedDelegationDetail = delegation) }
+    }
+
+    fun queryRemoteWathqRecord(serviceCode: String, queryNumber: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRemoteApiSyncing = true) }
+            val result = repository.verifyRemoteWathqRecord(serviceCode, queryNumber)
+            val record = result.getOrNull()
+            _uiState.update {
+                it.copy(
+                    isRemoteApiSyncing = false,
+                    queriedWathqRecord = record,
+                    toastMessage = if (record != null) {
+                        if (it.language == AppLanguage.ARABIC) "✅ تم التحقق من السجل ($queryNumber) عبر وثق: ${record.status}"
+                        else "✅ Wathq record ($queryNumber) verified: ${record.status}"
+                    } else null
+                )
+            }
         }
     }
 

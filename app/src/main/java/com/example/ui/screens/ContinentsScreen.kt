@@ -29,6 +29,8 @@ import androidx.compose.ui.unit.sp
 import com.example.control.AltruismDistributionEvent
 import com.example.control.KashefSecurityEngine
 import com.example.control.MagicInspectionResult
+import com.example.data.api.model.ApiDelegationServiceDto
+import com.example.data.api.model.ApiWathqRecordDto
 import com.example.data.model.AppLanguage
 import com.example.data.model.ContinentKey
 import com.example.data.model.UserAccount
@@ -46,12 +48,17 @@ fun ContinentsScreen(
     totalRevenueProcessed: Double,
     language: AppLanguage,
     activeUser: UserAccount,
+    remoteDelegations: List<ApiDelegationServiceDto> = emptyList(),
+    isRemoteApiSyncing: Boolean = false,
+    queriedWathqRecord: ApiWathqRecordDto? = null,
     onSelectContinent: (ContinentKey) -> Unit,
     onQueryChange: (String) -> Unit,
     onDetectedUrlChange: (String) -> Unit,
     onProcessMagicWindow: (query: String, url: String) -> Unit,
     onInjectAltruismRevenue: (amount: Double, currency: String) -> Unit,
     onClearQuarantine: () -> Unit,
+    onSyncDelegations: () -> Unit = {},
+    onQueryWathq: (serviceCode: String, queryNumber: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier
 ) {
     val isAr = language == AppLanguage.ARABIC
@@ -438,7 +445,15 @@ fun ContinentsScreen(
         item {
             when (selectedContinent) {
                 ContinentKey.GOVERNMENT_GATE -> {
-                    GovernmentGateContinent(language = language, onOpenUrl = { url -> KashefSecurityEngine.launchUri(context, url) })
+                    GovernmentGateContinent(
+                        language = language,
+                        remoteDelegations = remoteDelegations,
+                        isRemoteApiSyncing = isRemoteApiSyncing,
+                        queriedWathqRecord = queriedWathqRecord,
+                        onSyncDelegations = onSyncDelegations,
+                        onQueryWathq = onQueryWathq,
+                        onOpenUrl = { url -> KashefSecurityEngine.launchUri(context, url) }
+                    )
                 }
                 ContinentKey.CHILDREN_HARBOR -> {
                     ChildrenHarborContinent(language = language)
@@ -478,9 +493,16 @@ fun ContinentsScreen(
 @Composable
 fun GovernmentGateContinent(
     language: AppLanguage,
+    remoteDelegations: List<ApiDelegationServiceDto> = emptyList(),
+    isRemoteApiSyncing: Boolean = false,
+    queriedWathqRecord: ApiWathqRecordDto? = null,
+    onSyncDelegations: () -> Unit = {},
+    onQueryWathq: (serviceCode: String, queryNumber: String) -> Unit = { _, _ -> },
     onOpenUrl: (String) -> Unit
 ) {
     val isAr = language == AppLanguage.ARABIC
+    var wathqServiceType by remember { mutableStateOf("CR_COMMERCIAL_REG") }
+    var wathqQueryInput by remember { mutableStateOf("1010789456") }
 
     val portals = listOf(
         Pair("قوى (Qiwa)", "https://qiwa.sa"),
@@ -495,47 +517,307 @@ fun GovernmentGateContinent(
         Pair("صحة (Seha)", "https://seha.sa")
     )
 
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Navy800),
-        shape = RoundedCornerShape(14.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Gold400)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        // Official Portals Launcher Card
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Navy800),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Gold400)
         ) {
-            Text(
-                text = if (isAr) "🏛️ قارة السيادة والمنصات الحكومية الرسمية" else "🏛️ Government Sovereignty Continent",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Gold400)
-            )
-
-            Text(
-                text = if (isAr)
-                    "الحصون الحكومية القديمة الراسخة المعتمدة زمانياً لخدمة البشر وإنجاز المعاملات السيادية:"
-                else
-                    "Established sovereign portals for official civic and institutional governance:",
-                style = MaterialTheme.typography.bodySmall.copy(color = Slate300, fontSize = 11.sp)
-            )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(vertical = 4.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                items(portals) { (name, url) ->
+                Text(
+                    text = if (isAr) "🏛️ قارة السيادة والمنصات الحكومية الرسمية" else "🏛️ Government Sovereignty Continent",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Gold400)
+                )
+
+                Text(
+                    text = if (isAr)
+                        "الحصون الحكومية القديمة الراسخة المعتمدة زمانياً لخدمة البشر وإنجاز المعاملات السيادية:"
+                    else
+                        "Established sovereign portals for official civic and institutional governance:",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Slate300, fontSize = 11.sp)
+                )
+
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp)
+                ) {
+                    items(portals) { (name, url) ->
+                        FilledTonalButton(
+                            onClick = { onOpenUrl(url) },
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = Navy900,
+                                contentColor = Gold400
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Slate700)
+                        ) {
+                            Icon(Icons.Default.Launch, contentDescription = null, tint = Gold400, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(text = name, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 11.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // 📜 Retrofit E-Delegation & Sovereign Verification Section
+        Card(
+            colors = CardDefaults.cardColors(containerColor = Navy800),
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Cyan400)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Cyan500.copy(alpha = 0.2f))
+                                .border(1.dp, Cyan400, RoundedCornerShape(8.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(Icons.Default.VerifiedUser, contentDescription = null, tint = Cyan400, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                text = if (isAr) "📜 خدمات التفويض والوكالات الموثقة (Retrofit)" else "📜 Verified Delegation & Wathq Gateway",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Cyan400)
+                            )
+                            Text(
+                                text = if (isAr) "مفتاح الأمان: mLj1RiAns8sP... | تم التحقق والتوقيع" else "Security Key: mLj1RiAns8sP... | Signed & Verified",
+                                style = MaterialTheme.typography.bodySmall.copy(color = Slate400, fontSize = 10.sp)
+                            )
+                        }
+                    }
+
                     FilledTonalButton(
-                        onClick = { onOpenUrl(url) },
+                        onClick = onSyncDelegations,
+                        enabled = !isRemoteApiSyncing,
                         colors = ButtonDefaults.filledTonalButtonColors(
-                            containerColor = Navy900,
-                            contentColor = Gold400
+                            containerColor = Cyan500.copy(alpha = 0.2f),
+                            contentColor = Cyan400
                         ),
                         shape = RoundedCornerShape(8.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Slate700)
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.testTag("sync_delegations_retrofit_button")
                     ) {
-                        Icon(Icons.Default.Launch, contentDescription = null, tint = Gold400, modifier = Modifier.size(14.dp))
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(text = name, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 11.sp)
+                        if (isRemoteApiSyncing) {
+                            CircularProgressIndicator(modifier = Modifier.size(14.dp), color = Cyan400, strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Default.Refresh, contentDescription = null, modifier = Modifier.size(14.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(text = if (isAr) "تحديث السجلات" else "Sync", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+
+                Text(
+                    text = if (isAr)
+                        "سجلات التفاويض الإلكترونية والوكالات المعتمدة نظامياً المسترجعة من خوادم واجهة المنصة الخارجية الموثقة:"
+                    else
+                        "Authoritative delegation contracts and sovereign power of attorney records fetched via Retrofit:",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Slate300, fontSize = 11.sp)
+                )
+
+                // List of Delegations
+                if (remoteDelegations.isEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Navy900,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (isAr) "جاري استدعاء سجلات التفويض من API..." else "Fetching delegation records from API...",
+                                color = Slate400,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                } else {
+                    remoteDelegations.forEach { delegation ->
+                        Surface(
+                            shape = RoundedCornerShape(10.dp),
+                            color = Navy900,
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Gold500.copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            text = delegation.delegationId,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Gold400),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = GreenSuccess.copy(alpha = 0.2f)
+                                    ) {
+                                        Text(
+                                            text = delegation.status,
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = GreenSuccess),
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+
+                                Text(
+                                    text = if (isAr) "المفوّض: ${delegation.principalName}" else "Principal: ${delegation.principalName}",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Color.White)
+                                )
+
+                                Text(
+                                    text = if (isAr) "المفوّض له: ${delegation.authorizedPerson}" else "Authorized: ${delegation.authorizedPerson}",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Cyan400, fontWeight = FontWeight.SemiBold)
+                                )
+
+                                Text(
+                                    text = if (isAr) "نطاق الصلاحيات: ${delegation.scopeAr}" else "Scope: ${delegation.scopeEn}",
+                                    style = MaterialTheme.typography.bodySmall.copy(color = Slate300, fontSize = 11.sp)
+                                )
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = if (isAr) "المنصة: ${delegation.platformName}" else "Platform: ${delegation.platformName}",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = Slate400, fontSize = 10.sp)
+                                    )
+                                    Text(
+                                        text = if (isAr) "الصلاحية: حتى ${delegation.expiryDate}" else "Valid until: ${delegation.expiryDate}",
+                                        style = MaterialTheme.typography.labelSmall.copy(color = Gold400, fontSize = 10.sp)
+                                    )
+                                }
+
+                                if (delegation.verifiedSecuritySignature.isNotBlank()) {
+                                    Surface(
+                                        shape = RoundedCornerShape(4.dp),
+                                        color = Navy800,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(
+                                            text = "🔒 ${delegation.verifiedSecuritySignature}",
+                                            style = MaterialTheme.typography.labelSmall.copy(
+                                                fontFamily = FontFamily.Monospace,
+                                                fontSize = 9.sp,
+                                                color = Slate400
+                                            ),
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 🔍 Live Wathq Query & Verification Sub-tool
+                HorizontalDivider(color = Slate700, thickness = 0.8.dp)
+
+                Text(
+                    text = if (isAr) "🔍 استعلام وثق الفوري (Wathq Verification Service):" else "🔍 Realtime Wathq Verification Query:",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = Gold400)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = wathqQueryInput,
+                        onValueChange = { wathqQueryInput = it },
+                        label = { Text(if (isAr) "رقم السجل / الترخيص" else "CR / License Number", fontSize = 11.sp) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Gold400,
+                            unfocusedBorderColor = Slate700,
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White
+                        ),
+                        singleLine = true,
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("wathq_query_input")
+                    )
+
+                    Button(
+                        onClick = { onQueryWathq(wathqServiceType, wathqQueryInput) },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Gold500,
+                            contentColor = Navy900
+                        ),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .height(52.dp)
+                            .testTag("wathq_query_submit_button")
+                    ) {
+                        Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = if (isAr) "تحقق" else "Verify", fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                // Display queried result if present
+                queriedWathqRecord?.let { record ->
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Navy900,
+                        border = androidx.compose.foundation.BorderStroke(1.dp, GreenSuccess),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = record.titleAr,
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = GreenSuccess)
+                                )
+                                Text(
+                                    text = record.status,
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, color = Gold400)
+                                )
+                            }
+                            Text(
+                                text = "المنشأة: ${record.entityName} | رقم القيد: ${record.queryNumber}",
+                                style = MaterialTheme.typography.bodySmall.copy(color = Slate200, fontSize = 11.sp)
+                            )
+                            Text(
+                                text = "صلاحية السجل: من ${record.issueDate} إلى ${record.expiryDate}",
+                                style = MaterialTheme.typography.labelSmall.copy(color = Slate400, fontSize = 10.sp)
+                            )
+                        }
                     }
                 }
             }

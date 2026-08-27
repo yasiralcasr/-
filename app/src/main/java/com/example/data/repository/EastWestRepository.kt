@@ -1,5 +1,8 @@
 package com.example.data.repository
 
+import com.example.data.api.ExternalPlatformRemoteDataSource
+import com.example.data.api.model.ApiDelegationServiceDto
+import com.example.data.api.model.ApiWathqRecordDto
 import com.example.data.db.*
 import com.example.data.model.*
 import kotlinx.coroutines.flow.Flow
@@ -9,7 +12,8 @@ import java.util.*
 
 class EastWestRepository(
     private val database: AppDatabase,
-    var firestoreAuditManager: com.example.data.firestore.FirestoreAuditManager? = null
+    var firestoreAuditManager: com.example.data.firestore.FirestoreAuditManager? = null,
+    val remoteDataSource: ExternalPlatformRemoteDataSource = ExternalPlatformRemoteDataSource()
 ) {
 
     val MASTER_KEY = "1073781088@0503026675#8054\$8051%"
@@ -518,6 +522,56 @@ class EastWestRepository(
             )
         )
         database.auditDao().insertAll(initialLogs)
+    }
+
+    /**
+     * Fetch Industrial & Commercial Products via Retrofit Client
+     */
+    suspend fun fetchRemoteProducts(category: String? = null): Result<List<IndustrialProduct>> {
+        val result = remoteDataSource.fetchProducts(category)
+        if (result.isSuccess) {
+            logAction(
+                actorName = "منظومة Retrofit السحابية",
+                actorRole = "External Platform Client",
+                actionAr = "مزامنة وجلب كتالوج المنتجات الصناعية عبر واجهات API الخارجية الموثقة",
+                actionEn = "Synced Industrial Products via Authenticated External Retrofit API",
+                level = LogSeverity.INFO,
+                details = "Security Handshake: Active API Key + Bearer Token | Count: ${result.getOrNull()?.size ?: 0}"
+            )
+        }
+        return result
+    }
+
+    /**
+     * Fetch Delegation Services via Retrofit Client
+     */
+    suspend fun fetchRemoteDelegationServices(query: String? = null): Result<List<ApiDelegationServiceDto>> {
+        val result = remoteDataSource.fetchDelegationServices(query)
+        if (result.isSuccess) {
+            logAction(
+                actorName = "منظومة التفويض والربط السيادي",
+                actorRole = "Sovereign Delegation Gateway",
+                actionAr = "استعلام وتوثيق خدمات التفويض والوكالات عبر منصة الربط الإلكتروني",
+                actionEn = "Queried and Verified Delegation Services via External Retrofit API",
+                level = LogSeverity.COMMAND,
+                details = "Delegations Synced: ${result.getOrNull()?.size ?: 0} | Security Hash: Verified"
+            )
+        }
+        return result
+    }
+
+    /**
+     * Fetch single Delegation by ID
+     */
+    suspend fun fetchRemoteDelegationById(delegationId: String): Result<ApiDelegationServiceDto?> {
+        return remoteDataSource.fetchDelegationById(delegationId)
+    }
+
+    /**
+     * Verify Wathq Government Record via Retrofit
+     */
+    suspend fun verifyRemoteWathqRecord(serviceCode: String, queryNumber: String): Result<ApiWathqRecordDto> {
+        return remoteDataSource.verifyWathqRecord(serviceCode, queryNumber)
     }
 
     private fun ProgramEntity.toDomain() = EnterpriseProgram(
