@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,15 +18,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.control.AltruismDistributionEvent
 import com.example.control.KashefSecurityEngine
 import com.example.control.MagicInspectionResult
@@ -82,62 +87,91 @@ fun ContinentsScreen(
                 border = androidx.compose.foundation.BorderStroke(1.5.dp, Gold400),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(115.dp)
+                            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(44.dp)
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(Gold500.copy(alpha = 0.2f))
-                                    .border(1.dp, Gold400, RoundedCornerShape(10.dp)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Public,
-                                    contentDescription = "Continents",
-                                    tint = Gold400,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(10.dp))
-                            Column {
-                                Text(
-                                    text = if (isAr) "قارات وفضاءات كاشف المستور" else "Kashef Ultimate Spatial Continents",
-                                    style = MaterialTheme.typography.titleMedium.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = Gold400
+                        Image(
+                            painter = painterResource(id = R.drawable.img_sovereign_headquarters_1787828624581),
+                            contentDescription = "Kashef Al-Mastoor Continents Hub",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.Transparent,
+                                            Navy900.copy(alpha = 0.85f),
+                                            Navy800
+                                        )
                                     )
                                 )
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(44.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .background(Gold500.copy(alpha = 0.2f))
+                                        .border(1.dp, Gold400, RoundedCornerShape(10.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Public,
+                                        contentDescription = "Continents",
+                                        tint = Gold400,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Column {
+                                    Text(
+                                        text = if (isAr) "قارات وفضاءات كاشف المستور" else "Kashef Ultimate Spatial Continents",
+                                        style = MaterialTheme.typography.titleMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = Gold400
+                                        )
+                                    )
+                                    Text(
+                                        text = if (isAr) "فضاءات لامتناهية مستقلة ومحصنة مع النافذة السحرية"
+                                        else "Infinite independent secure spaces with Magic Window",
+                                        style = MaterialTheme.typography.bodySmall.copy(color = Slate300, fontSize = 11.sp)
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = Cyan500.copy(alpha = 0.2f)
+                            ) {
                                 Text(
-                                    text = if (isAr) "فضاءات لامتناهية مستقلة ومحصنة مع النافذة السحرية"
-                                    else "Infinite independent secure spaces with Magic Window",
-                                    style = MaterialTheme.typography.bodySmall.copy(color = Slate300, fontSize = 11.sp)
+                                    text = if (isAr) "٦ قارات مستقلة" else "6 Continents",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = Cyan400,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 11.sp
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
                             }
-                        }
-
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = Cyan500.copy(alpha = 0.2f)
-                        ) {
-                            Text(
-                                text = if (isAr) "٦ قارات مستقلة" else "6 Continents",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    color = Cyan400,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp
-                                ),
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
                         }
                     }
                 }

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شركة الشرق والغرب العالمية | البوابة الرسمية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0F172A;
+            --secondary: #1E293B;
+            --accent: #F59E0B;
+            --accent-light: #FDE68A;
+            --text: #F8FAFC;
+            --text-muted: #94A3B8;
+            --success: #10B981;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Tajawal', sans-serif;
+        }
+        body {
+            background-color: var(--primary);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background-color: var(--secondary);
+            border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .logo-badge {
+            background: linear-gradient(135deg, var(--accent), #D97706);
+            color: var(--primary);
+            font-weight: 800;
+            font-size: 1.2rem;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .brand-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--accent-light);
+        }
+        .nav-links {
+            display: flex;
+            gap: 1.5rem;
+        }
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .nav-links a:hover {
+            color: var(--accent);
+        }
+        main {
+            flex: 1;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 3rem 1.5rem;
+            width: 100%;
+        }
+        .hero {
+            text-align: center;
+            padding: 3rem 1rem;
+            background: radial-gradient(circle at center, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.4) 100%);
+            border-radius: 20px;
+            border: 1px solid rgba(245, 158, 11, 0.15);
+            margin-bottom: 3rem;
+        }
+        .hero h1 {
+            font-size: 2.4rem;
+            color: #FFFFFF;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 650px;
+            margin: 0 auto 2rem;
+        }
+        .badge-verified {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        .card {
+            background-color: var(--secondary);
+            border-radius: 14px;
+            padding: 1.8rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: transform 0.3s, border-color 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        .card h3 {
+            color: var(--accent-light);
+            margin-bottom: 0.5rem;
+        }
+        .card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+        .policy-section {
+            background-color: var(--secondary);
+            border-radius: 14px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .policy-section h2 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+        .policy-section p, .policy-section li {
+            color: var(--text-muted);
+            margin-bottom: 0.8rem;
+            font-size: 0.95rem;
+        }
+        .policy-section ul {
+            padding-right: 1.5rem;
+        }
+        footer {
+            background-color: #0B1120;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        .btn {
+            background: linear-gradient(135deg, var(--accent), #D97706);
+            color: var(--primary);
+            font-weight: 700;
+            padding: 0.8rem 1.8rem;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-block;
+            transition: opacity 0.3s;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <div class="logo-badge">EWG</div>
+            <div class="brand-title">شركة الشرق والغرب العالمية</div>
+        </div>
+        <nav class="nav-links">
+            <a href="#about">عن المنظومة</a>
+            <a href="#services">القطاعات</a>
+            <a href="#privacy">سياسة الخصوصية</a>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="badge-verified">
+                ✓ منظومة معتمدة وموثقة رسمياً
+            </div>
+            <h1>البوابة الرقمية الشاملة لشركة الشرق والغرب العالمية</h1>
+            <p>منظومة مؤسسية متكاملة لربط الشركات التابعة، المشاريع الاستثمارية، والحلول الذكية بأعلى معايير الأمان والتحكم السيادي.</p>
+            <a href="#privacy" class="btn">معلومات الخصوصية والأمان</a>
+        </section>
+
+        <section id="services" class="cards-grid">
+            <div class="card">
+                <div class="card-icon">🏛️</div>
+                <h3>الشركات والقطاعات التابعة</h3>
+                <p>بوابات تشغيلية متخصصة في الخدمات العامة، التوريدات، الملاحة، والاستثمارات الشاملة.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">🔒</div>
+                <h3>التحقق والأمان السيادي</h3>
+                <p>تكامل بيومتري وتشفير متقدم لكافة العمليات والبيانات المؤسسية والربط السحابي.</p>
+            </div>
+            <div class="card">
+                <div class="card-icon">📱</div>
+                <h3>تطبيق الهاتف الذكي</h3>
+                <p>حزمة تطبيق Android متطورة تتيح الوصول الفوري لكافة الخدمات والمواقع الجغرافية.</p>
+            </div>
+        </section>
+
+        <section id="privacy" class="policy-section">
+            <h2>سياسة الخصوصية وشروط الاستخدام (Privacy Policy)</h2>
+            <p>تلتزم شركة الشرق والغرب العالمية بحماية خصوصية وأمان بيانات مستخدمي التطبيق والبوابة الرقمية.</p>
+            <ul>
+                <li><strong>البيانات والموقع:</strong> يستخدم التطبيق إذن تحديد الموقع الجغرافي لعرض فروع الشركات والخدمات القريبة على الخريطة فقط.</li>
+                <li><strong>الكاميرا والوسائط:</strong> تستخدم الكاميرا لمسح المستندات وتأكيد العمليات المؤسسية برغبة المستخدم الصريحة.</li>
+                <li><strong>التشفير والأمان:</strong> جميع البيانات المتداولة يتم نقلها وتخزينها عبر قنوات مشفرة وفق أعلى معايير أمان البيانات.</li>
+                <li><strong>بيانات التواصل:</strong> للتواصل مع الدعم الفني أو إدارة الخصوصية: <code>yasiralcasr@gmail.com</code></li>
+            </ul>
+        </section>
+    </main>
+
+    <footer>
+        <p>© 2026 شركة الشرق والغرب العالمية - جميع الحقوق محفوظة.</p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #64748B;">Application ID: com.aistudio.eastwestglobal.kxmpzq</p>
+    </footer>
+
+</body>
+</html>

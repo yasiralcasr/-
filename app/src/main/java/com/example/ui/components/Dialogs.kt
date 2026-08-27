@@ -589,3 +589,110 @@ private fun copyToClipboard(context: Context, text: String) {
     val clip = ClipData.newPlainText("Copied Text", text)
     clipboard.setPrimaryClip(clip)
 }
+
+@Composable
+fun WathqEnterpriseVerificationDialog(
+    isAr: Boolean,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Navy800,
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, Gold400),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+                .testTag("wathq_verification_dialog")
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(26.dp))
+                        .background(Gold500.copy(alpha = 0.15f))
+                        .border(1.5.dp, Gold400, RoundedCornerShape(26.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.VerifiedUser,
+                        contentDescription = "Verified Wathq",
+                        tint = Gold400,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = if (isAr) "توثيق واثق الحكومي المعتمد" else "Wathq Government Verification",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Gold400
+                    )
+                )
+
+                Text(
+                    text = if (isAr) "بوابة التوثيق والتحقق من السجلات والبيانات الرسمية" else "Official Corporate & Commercial Registry Verification",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Slate300, fontSize = 11.sp),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 14.dp)
+                )
+
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = Navy900,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Slate700),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = if (isAr) "حالة السجل التجاري:" else "CR Status:", color = Slate300, fontSize = 12.sp)
+                            Text(text = if (isAr) "سارٍ ونشط رسمياً" else "Active & Valid", color = GreenSuccess, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = if (isAr) "الجهة الموثقة:" else "Issuing Body:", color = Slate300, fontSize = 12.sp)
+                            Text(text = if (isAr) "وزارة التجارة / واثق" else "Ministry of Commerce / Wathq", color = Cyan300, fontSize = 12.sp)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = if (isAr) "مستوى الأمان:" else "Security Tier:", color = Slate300, fontSize = 12.sp)
+                            Text(text = if (isAr) "سيادي فئة (أ)" else "Sovereign Tier A", color = Gold400, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Button(
+                    onClick = onDismiss,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Gold500,
+                        contentColor = Navy900
+                    ),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(text = if (isAr) "إغلاق" else "Close", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}

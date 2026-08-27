@@ -1,6 +1,7 @@
 package com.example.ui.screens
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -20,11 +21,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.model.AppLanguage
 import com.example.ui.theme.*
 
@@ -167,24 +171,51 @@ fun GuestHomeScreen(
                         .padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Empty Canvas Icon
+                    // HQ Architectural Hero Asset
                     Box(
                         modifier = Modifier
-                            .size(90.dp)
-                            .clip(CircleShape)
-                            .background(Navy900)
-                            .border(2.dp, Cyan400.copy(alpha = 0.5f), CircleShape),
-                        contentAlignment = Alignment.Center
+                            .fillMaxWidth()
+                            .height(130.dp)
+                            .clip(RoundedCornerShape(16.dp))
                     ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Inbox,
-                            contentDescription = "Empty Space",
-                            tint = Cyan300,
-                            modifier = Modifier.size(44.dp)
+                        Image(
+                            painter = painterResource(id = R.drawable.img_sovereign_headquarters_1787828624581),
+                            contentDescription = "East & West Global Headquarters",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
                         )
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        listOf(
+                                            Color.Transparent,
+                                            Navy900.copy(alpha = 0.8f)
+                                        )
+                                    )
+                                )
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Gold500,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(12.dp)
+                        ) {
+                            Text(
+                                text = if (isAr) "المقر الرئيسي للمجموعة" else "Global Headquarters",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = Navy900,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp
+                                ),
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Text(
                         text = if (isAr) "مساحة الضيوف والزوار" else "Guest & Visitor Workspace",

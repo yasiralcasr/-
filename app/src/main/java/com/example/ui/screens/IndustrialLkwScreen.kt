@@ -71,7 +71,7 @@ fun IndustrialLkwScreen(
                             .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_hero_banner),
+                            painter = painterResource(id = R.drawable.img_industrial_lkw_hero_1787828609760),
                             contentDescription = "LK-W Industrial Banner",
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()

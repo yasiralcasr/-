@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -1125,42 +1126,92 @@ private fun SubsidiaryEmployeeCard(
     isAr: Boolean,
     onClick: () -> Unit
 ) {
+    val bannerRes = when (profile.id) {
+        "sub_factory" -> R.drawable.img_industrial_lkw_hero_1787828609760
+        "sub_rafiq" -> R.drawable.img_logistics_fleet_1787828655423
+        "sub_qimmat" -> R.drawable.img_food_sweets_nuts_1787828638563
+        else -> R.drawable.img_sovereign_headquarters_1787828624581
+    }
+
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Navy800,
         border = BorderStroke(1.2.dp, profile.primaryColor.copy(alpha = 0.65f)),
-        shadowElevation = 4.dp,
+        shadowElevation = 6.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
-                    .size(46.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(profile.primaryColor.copy(alpha = 0.15f))
-                    .border(1.2.dp, profile.primaryColor, RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
+                    .fillMaxWidth()
+                    .height(85.dp)
             ) {
-                Icon(
-                    imageVector = profile.icon,
+                Image(
+                    painter = painterResource(id = bannerRes),
                     contentDescription = profile.nameEn,
-                    tint = profile.primaryColor,
-                    modifier = Modifier.size(24.dp)
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Navy800.copy(alpha = 0.85f),
+                                    Navy800
+                                )
+                            )
+                        )
+                )
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = profile.primaryColor.copy(alpha = 0.95f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = if (isAr) profile.tagAr else profile.tagEn,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Navy900,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(profile.primaryColor.copy(alpha = 0.18f))
+                        .border(1.2.dp, profile.primaryColor, RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = profile.icon,
+                        contentDescription = profile.nameEn,
+                        tint = profile.primaryColor,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
 
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = if (isAr) profile.nameAr else profile.nameEn,
                         style = MaterialTheme.typography.titleSmall.copy(
@@ -1171,58 +1222,41 @@ private fun SubsidiaryEmployeeCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+
+                    Spacer(modifier = Modifier.height(2.dp))
+
+                    Text(
+                        text = if (isAr) profile.employeeDescAr else profile.employeeDescEn,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = Slate300,
+                            fontSize = 10.5.sp,
+                            lineHeight = 14.sp
+                        ),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
                 }
 
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = profile.primaryColor.copy(alpha = 0.12f)
+                    shape = RoundedCornerShape(8.dp),
+                    color = profile.primaryColor,
+                    modifier = Modifier.clip(RoundedCornerShape(8.dp))
                 ) {
-                    Text(
-                        text = if (isAr) profile.tagAr else profile.tagEn,
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = profile.primaryColor,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 9.5.sp
-                        ),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.5.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                Text(
-                    text = if (isAr) profile.employeeDescAr else profile.employeeDescEn,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        color = Slate300,
-                        fontSize = 10.5.sp,
-                        lineHeight = 14.sp
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-
-            Spacer(modifier = Modifier.width(8.dp))
-
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = profile.primaryColor,
-                modifier = Modifier.clip(RoundedCornerShape(8.dp))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = if (isAr) "دخول" else "Login",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = Navy900,
-                            fontWeight = FontWeight.Black,
-                            fontSize = 11.sp
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = if (isAr) "دخول" else "Login",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = Navy900,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 11.sp
+                            )
                         )
-                    )
+                    }
                 }
             }
         }
@@ -1238,106 +1272,158 @@ private fun SubsidiaryClientCard(
     isAr: Boolean,
     onClick: () -> Unit
 ) {
+    val bannerRes = when (profile.id) {
+        "sub_factory" -> R.drawable.img_industrial_lkw_hero_1787828609760
+        "sub_rafiq" -> R.drawable.img_logistics_fleet_1787828655423
+        "sub_qimmat" -> R.drawable.img_food_sweets_nuts_1787828638563
+        else -> R.drawable.img_sovereign_headquarters_1787828624581
+    }
+
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = RoundedCornerShape(16.dp),
         color = Navy800,
         border = BorderStroke(1.2.dp, profile.primaryColor.copy(alpha = 0.65f)),
-        shadowElevation = 4.dp,
+        shadowElevation = 6.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(85.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = bannerRes),
+                    contentDescription = profile.nameEn,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(profile.primaryColor.copy(alpha = 0.15f))
-                        .border(1.2.dp, profile.primaryColor, RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = profile.icon,
-                        contentDescription = profile.nameEn,
-                        tint = profile.primaryColor,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = if (isAr) profile.nameAr else profile.nameEn,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White,
-                            fontSize = 13.5.sp
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Navy800.copy(alpha = 0.85f),
+                                    Navy800
+                                )
+                            )
                         )
-                    )
-                    Text(
-                        text = if (isAr) "بوابة العملاء والشركاء التجاريين" else "Client & Partner Portal",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = profile.primaryColor,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 10.sp
-                        )
-                    )
-                }
-
+                )
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = profile.primaryColor.copy(alpha = 0.18f),
-                    border = BorderStroke(1.dp, profile.primaryColor)
+                    shape = RoundedCornerShape(4.dp),
+                    color = profile.primaryColor.copy(alpha = 0.95f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
                 ) {
                     Text(
-                        text = if (isAr) "طلب خدمة" else "Request",
+                        text = if (isAr) "بوابة العملاء" else "Clients",
                         style = MaterialTheme.typography.labelSmall.copy(
-                            color = profile.primaryColor,
+                            color = Navy900,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp
+                            fontSize = 9.sp
                         ),
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Column(modifier = Modifier.padding(14.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(profile.primaryColor.copy(alpha = 0.15f))
+                            .border(1.2.dp, profile.primaryColor, RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = profile.icon,
+                            contentDescription = profile.nameEn,
+                            tint = profile.primaryColor,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
 
-            Text(
-                text = if (isAr) profile.clientDescAr else profile.clientDescEn,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    color = Slate300,
-                    fontSize = 11.sp,
-                    lineHeight = 15.sp
-                )
-            )
+                    Spacer(modifier = Modifier.width(12.dp))
 
-            Spacer(modifier = Modifier.height(8.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = if (isAr) profile.nameAr else profile.nameEn,
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 13.5.sp
+                            )
+                        )
+                        Text(
+                            text = if (isAr) "بوابة العملاء والشركاء التجاريين" else "Client & Partner Portal",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                color = profile.primaryColor,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 10.sp
+                            )
+                        )
+                    }
 
-            // Quick Service Chips
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                val services = if (isAr) profile.clientServicesAr.take(2) else profile.clientServicesEn.take(2)
-                services.forEach { service ->
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
-                        color = Navy900,
-                        border = BorderStroke(0.8.dp, Slate700)
+                        shape = RoundedCornerShape(8.dp),
+                        color = profile.primaryColor.copy(alpha = 0.18f),
+                        border = BorderStroke(1.dp, profile.primaryColor)
                     ) {
                         Text(
-                            text = "• $service",
+                            text = if (isAr) "طلب خدمة" else "Request",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = Slate200,
-                                fontSize = 9.5.sp
+                                color = profile.primaryColor,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 11.sp
                             ),
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
-                            maxLines = 1
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                         )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = if (isAr) profile.clientDescAr else profile.clientDescEn,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        color = Slate300,
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Quick Service Chips
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val services = if (isAr) profile.clientServicesAr.take(2) else profile.clientServicesEn.take(2)
+                    services.forEach { service ->
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = Navy900,
+                            border = BorderStroke(0.8.dp, Slate700)
+                        ) {
+                            Text(
+                                text = "• $service",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    color = Slate200,
+                                    fontSize = 9.5.sp
+                                ),
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
+                                maxLines = 1
+                            )
+                        }
                     }
                 }
             }

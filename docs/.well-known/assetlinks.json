@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.aistudio.eastwestglobal.kxmpzq",
+      "sha256_cert_fingerprints": [
+        "8C:F0:92:78:AE:58:84:CE:3B:C7:19:A6:1D:B6:CE:F2:DC:D3:C9:FB:95:1F:D7:4E:73:96:60:4E:48:4B:F5:16"
+      ]
+    }
+  }
+]

@@ -39,6 +39,7 @@ import com.example.R
 import com.example.data.model.AppLanguage
 import com.example.data.model.RoleRank
 import com.example.data.model.UserAccount
+import com.example.ui.components.WathqEnterpriseVerificationDialog
 import com.example.ui.theme.*
 
 /**
@@ -81,6 +82,7 @@ fun SubsidiariesPortalScreen(
     var selectedStaffCompany by remember { mutableStateOf<SubsidiaryCompany?>(null) }
     var selectedClientCompany by remember { mutableStateOf<SubsidiaryCompany?>(null) }
     var selectedExecutiveContact by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var showWathqVerificationDialog by remember { mutableStateOf(false) }
 
     val subsidiaries = remember {
         listOf(
@@ -394,6 +396,103 @@ fun SubsidiariesPortalScreen(
             }
 
             // =========================================================================
+            // 2.5 WATHQ GOVERNMENT API & ENTERPRISE INTEGRATION BANNER
+            // =========================================================================
+            item {
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = Navy800,
+                    border = BorderStroke(
+                        1.5.dp,
+                        Brush.horizontalGradient(listOf(Cyan400, Gold400, GreenSuccess))
+                    ),
+                    shadowElevation = 8.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showWathqVerificationDialog = true }
+                        .testTag("card_wathq_gateway_trigger")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(Cyan500.copy(alpha = 0.2f))
+                                        .border(1.dp, Cyan400, CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.VerifiedUser,
+                                        contentDescription = "Wathq",
+                                        tint = Cyan300,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Column {
+                                    Text(
+                                        text = if (isAr) "بوابة الربط والتحقق الحكومي المعتمد (واثق)" else "Wathq Government API Gateway",
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White,
+                                            fontSize = 13.5.sp
+                                        )
+                                    )
+                                    Text(
+                                        text = if (isAr) "مفتاح أمان معتمد: Trial_App_35278 • 8 خدمات نشطة" else "Active Verified Key: Trial_App_35278 • 8 APIs",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            color = Gold400,
+                                            fontSize = 10.5.sp
+                                        )
+                                    )
+                                }
+                            }
+
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = GreenSuccess.copy(alpha = 0.2f),
+                                border = BorderStroke(1.dp, GreenSuccess)
+                            ) {
+                                Text(
+                                    text = if (isAr) "استعلام فوري" else "Instant Query",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        color = GreenSuccess,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp
+                                    ),
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+
+                        Text(
+                            text = if (isAr)
+                                "السجل التجاري • الغرفة التجارية • عقود الشركات • التفويض الإلكتروني ومقيم • الوكالات الشرعية • الصكوك العقارية"
+                            else
+                                "Commercial Registration • Chamber of Commerce • Company Contracts • E-Delegation • Power of Attorney • Real Estate",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Slate300,
+                                fontSize = 11.sp,
+                                lineHeight = 16.sp
+                            )
+                        )
+                    }
+                }
+            }
+
+            // =========================================================================
             // 3. SUBSIDIARY COMPANIES LIST (الشركات التابعة مع أزرار الدخول)
             // =========================================================================
             item {
@@ -495,6 +594,14 @@ fun SubsidiariesPortalScreen(
                     if (isAr) "مرحباً، أود الاستفسار وطلب عروض الأسعار من: ${company.nameAr}" else "Hello, inquiring about products & catalog of ${company.nameEn}"
                 )
             }
+        )
+    }
+
+    // Wathq Government API Dialog
+    if (showWathqVerificationDialog) {
+        WathqEnterpriseVerificationDialog(
+            isAr = isAr,
+            onDismiss = { showWathqVerificationDialog = false }
         )
     }
 }
@@ -680,20 +787,74 @@ private fun SubsidiaryCard(
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(
-                            company.badgeColor.copy(alpha = 0.08f),
-                            Navy900,
-                            Navy800.copy(alpha = 0.6f)
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // High-Resolution Subsidiary Visual Banner
+            val bannerRes = when (company.id) {
+                "sub_factory_industrial" -> R.drawable.img_industrial_lkw_hero_1787828609760
+                "sub_rafiq_alsanad" -> R.drawable.img_logistics_fleet_1787828655423
+                "sub_qimmat_aldir" -> R.drawable.img_food_sweets_nuts_1787828638563
+                else -> R.drawable.img_sovereign_headquarters_1787828624581
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp))
+            ) {
+                Image(
+                    painter = painterResource(id = bannerRes),
+                    contentDescription = company.nameEn,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color.Transparent,
+                                    Navy900.copy(alpha = 0.85f),
+                                    Navy900
+                                )
+                            )
+                        )
+                )
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = company.badgeColor.copy(alpha = 0.95f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(10.dp)
+                ) {
+                    Text(
+                        text = if (isAr) company.typeAr else company.typeEn,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = Navy900,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 9.5.sp
+                        ),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                    )
+                }
+            }
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                Navy900,
+                                Navy800.copy(alpha = 0.8f)
+                            )
                         )
                     )
-                )
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
             // Top: Icon + Name + Sector Badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -860,6 +1021,7 @@ private fun SubsidiaryCard(
             }
         }
     }
+}
 }
 
 /**
