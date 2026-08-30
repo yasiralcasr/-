@@ -53,49 +53,35 @@ class MainActivity : ComponentActivity() {
                 }
 
                 CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
-                    when (uiState.screenMode) {
-                        com.example.ui.AppScreenMode.WELCOME_GATEWAY -> {
-                            WelcomeGatewayScreen(
-                                language = uiState.language,
-                                activeUser = uiState.activeUser,
-                                isMasterUnlocked = uiState.isMasterCodeUnlocked,
-                                onEnterGuestPortal = { viewModel.enterGuestPortal() },
-                                onEnterSubsidiariesPortal = { viewModel.enterSubsidiariesPortal() },
-                                onEnterOrganizerEnterprise = { viewModel.enterOrganizerEnterprise() },
-                                onLoginStaffSubsidiary = { compAr, compEn, deptAr, deptEn, name, pass ->
-                                    viewModel.loginStaffFromSubsidiary(compAr, compEn, deptAr, deptEn, name, pass)
-                                },
-                                onSubmitClientInquiry = { compAr, compEn, clientName, orgName, phone, email, type, notes ->
-                                    viewModel.submitClientInquiryFromGateway(compAr, compEn, clientName, orgName, phone, email, type, notes)
-                                },
-                                onCreateNewUserAccount = { username, fullName, role, deptAr, deptEn ->
-                                    viewModel.createUserAccount(username, fullName, role, deptAr, deptEn)
-                                },
-                                onSwitchUser = { user -> viewModel.switchActiveUser(user) },
-                                onToggleLanguage = { viewModel.toggleLanguage() },
-                                onOpenMasterKeyDialog = { viewModel.showMasterDialog(true) }
-                            )
-                        }
+                    if (!uiState.isLoggedIn) {
+                        LoginScreen(
+                            language = uiState.language,
+                            isLoading = uiState.isAuthLoading,
+                            errorMessage = uiState.authErrorMessage,
+                            onSignInWithEmail = { email, pass -> viewModel.signInWithEmail(email, pass) }
+                        )
+                    } else {
+                        when (uiState.screenMode) {
+                            com.example.ui.AppScreenMode.WELCOME_GATEWAY,
+                            com.example.ui.AppScreenMode.SUBSIDIARIES_PORTAL -> {
+                                SubsidiariesPortalScreen(
+                                    language = uiState.language,
+                                    onReturnToGateway = { viewModel.signOutAuth() },
+                                    onToggleLanguage = { viewModel.toggleLanguage() },
+                                    onEnterOrganizerMode = { viewModel.enterOrganizerEnterprise() },
+                                    onSwitchUser = { viewModel.switchActiveUser(it) }
+                                )
+                            }
 
-                        com.example.ui.AppScreenMode.GUEST_PORTAL -> {
-                            GuestHomeScreen(
-                                language = uiState.language,
-                                onReturnToGateway = { viewModel.returnToWelcomeGateway() },
-                                onEnterOrganizerMode = { viewModel.enterOrganizerEnterprise() }
-                            )
-                        }
+                            com.example.ui.AppScreenMode.GUEST_PORTAL -> {
+                                GuestHomeScreen(
+                                    language = uiState.language,
+                                    onReturnToGateway = { viewModel.signOutAuth() },
+                                    onEnterOrganizerMode = { viewModel.enterOrganizerEnterprise() }
+                                )
+                            }
 
-                        com.example.ui.AppScreenMode.SUBSIDIARIES_PORTAL -> {
-                            SubsidiariesPortalScreen(
-                                language = uiState.language,
-                                onReturnToGateway = { viewModel.returnToWelcomeGateway() },
-                                onToggleLanguage = { viewModel.toggleLanguage() },
-                                onEnterOrganizerMode = { viewModel.enterOrganizerEnterprise() },
-                                onSwitchUser = { viewModel.switchActiveUser(it) }
-                            )
-                        }
-
-                        com.example.ui.AppScreenMode.ORGANIZER_ENTERPRISE -> {
+                            com.example.ui.AppScreenMode.ORGANIZER_ENTERPRISE -> {
                             Scaffold(
                                 modifier = Modifier.fillMaxSize(),
                                 topBar = {
@@ -295,6 +281,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
             }
 
             // Login Screen Modal Dialog
