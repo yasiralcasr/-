@@ -119,10 +119,12 @@ fun LoginScreen(
                             modifier = Modifier.size(62.dp)
                         ) {
                             Image(
-                                painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                                painter = painterResource(id = R.drawable.ic_company_logo),
                                 contentDescription = "Logo",
-                                contentScale = ContentScale.Fit,
-                                modifier = Modifier.padding(6.dp)
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .clip(CircleShape)
                             )
                         }
                     }
