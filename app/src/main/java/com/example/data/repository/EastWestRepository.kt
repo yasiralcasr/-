@@ -433,6 +433,22 @@ class EastWestRepository(
                 createdAt = "2026-08-15"
             ),
             UserAccountEntity(
+                id = "usr-badr",
+                username = "badr_alnukhailan",
+                fullName = "بدر النخيلان (نائب الرئيس التنفيذي للشؤون الاستراتيجية)",
+                roleRank = RoleRank.SUPREME_COMMANDER.name,
+                departmentAr = "الإدارة التنفيذية العليا والاستثمارات الاستراتيجية",
+                departmentEn = "Executive Leadership & Strategic Investments",
+                assignedCode = "BADR-EWG-7788-OVERRIDE",
+                canRead = true,
+                canWrite = true,
+                canExecute = true,
+                canAdminister = true,
+                canPurge = true,
+                isMasterOverride = true,
+                createdAt = "2026-08-15"
+            ),
+            UserAccountEntity(
                 id = "usr-02",
                 username = "general_systems",
                 fullName = "اللواء / م. فيصل الشمري",

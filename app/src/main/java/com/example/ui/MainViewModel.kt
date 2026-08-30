@@ -1094,14 +1094,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 is AuthResult.Error -> {
                     // Fallback to direct corporate login if Firebase user does not exist or offline
+                    val isYasir = email.contains("yasir", ignoreCase = true) || email.contains("admin", ignoreCase = true)
+                    val isBadr = email.contains("badr", ignoreCase = true) || email.contains("nukhailan", ignoreCase = true)
+
+                    val resolvedFullName = when {
+                        isYasir -> "ياسر الرشيدي (الرئيس التنفيذي • Group CEO)"
+                        isBadr -> "بدر النخيلان (نائب الرئيس التنفيذي للشؤون الاستراتيجية)"
+                        else -> email.substringBefore("@")
+                    }
+
+                    val resolvedRank = when {
+                        isYasir || isBadr -> RoleRank.SUPREME_COMMANDER
+                        else -> RoleRank.GENERAL
+                    }
+
+                    val resolvedDeptAr = when {
+                        isYasir -> "الرئاسة التنفيذية وحوكمة المجموعة"
+                        isBadr -> "الإدارة التنفيذية العليا والاستثمارات الاستراتيجية"
+                        else -> "الإدارة العامة والأنظمة الرقمية"
+                    }
+
+                    val resolvedDeptEn = when {
+                        isYasir -> "Executive Leadership & Group Governance"
+                        isBadr -> "Executive Leadership & Strategic Investments"
+                        else -> "General Administration & Digital Systems"
+                    }
+
                     val localAccount = UserAccount(
-                        id = "usr-${email.hashCode()}",
+                        id = if (isBadr) "usr-badr-alnukhailan" else "usr-${email.hashCode()}",
                         username = email.substringBefore("@"),
-                        fullName = if (email.contains("yasir", ignoreCase = true)) "ياسر الرشيدي (الرئيس التنفيذي)" else email.substringBefore("@"),
-                        roleRank = if (email.contains("yasir", ignoreCase = true) || email.contains("admin", ignoreCase = true)) RoleRank.SUPREME_COMMANDER else RoleRank.GENERAL,
-                        departmentAr = "الإدارة العامة والأنظمة الرقمية",
-                        departmentEn = "General Administration & Digital Systems",
-                        assignedCode = "EMAIL_AUTH_SECURE",
+                        fullName = resolvedFullName,
+                        roleRank = resolvedRank,
+                        departmentAr = resolvedDeptAr,
+                        departmentEn = resolvedDeptEn,
+                        assignedCode = if (isBadr) "BADR-EWG-7788-OVERRIDE" else "EMAIL_AUTH_SECURE",
                         canRead = true,
                         canWrite = true,
                         canExecute = true,

@@ -320,6 +320,100 @@ fun LoginScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    // Dedicated Quick Access for Executive Leadership (تسجيل الدخول السريع للقيادة)
+                    HorizontalDivider(
+                        color = Slate700.copy(alpha = 0.6f),
+                        thickness = 1.dp,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(
+                        text = if (isAr) "تسجيل دخول القيادة التنفيذية المعتمدة" else "Authorized Executive Quick Sign-In",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            color = Gold400,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Badr Al-Nukhailan dedicated login button
+                    OutlinedButton(
+                        onClick = {
+                            emailInput = "badr.alnukhailan@eastwestglobal.com"
+                            passwordInput = "Badr@EWG2026#Exec"
+                            onSignInWithEmail("badr.alnukhailan@eastwestglobal.com", "Badr@EWG2026#Exec")
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Navy800.copy(alpha = 0.7f),
+                            contentColor = Gold300
+                        ),
+                        border = BorderStroke(1.dp, Gold500.copy(alpha = 0.7f)),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .testTag("quick_login_badr_alnukhailan")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.VerifiedUser,
+                            contentDescription = null,
+                            tint = Gold400,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isAr) "دخول: بدر النخيلان (نائب الرئيس التنفيذي)" else "Sign In: Badr Al-Nukhailan (VP)",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Yasser Al-Rashidi dedicated login button
+                    OutlinedButton(
+                        onClick = {
+                            emailInput = "yasir@eastwestglobal.com"
+                            passwordInput = "1073781088@0503026675#8054\$8051%"
+                            onSignInWithEmail("yasir@eastwestglobal.com", "1073781088@0503026675#8054\$8051%")
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Navy900.copy(alpha = 0.5f),
+                            contentColor = Slate300
+                        ),
+                        border = BorderStroke(1.dp, Slate700),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(44.dp)
+                            .testTag("quick_login_yasir_ceo")
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AdminPanelSettings,
+                            contentDescription = null,
+                            tint = Gold400,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (isAr) "دخول: ياسر الرشيدي (الرئيس التنفيذي)" else "Sign In: Yasser Al-Rashidi (CEO)",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp
+                            )
+                        )
+                    }
                 }
             }
 

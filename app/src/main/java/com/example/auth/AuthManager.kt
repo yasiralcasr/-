@@ -253,34 +253,62 @@ class AuthManager private constructor(private val appContext: Context) {
                 email.contains("yasir", ignoreCase = true) ||
                 name.contains("ياسر", ignoreCase = true) ||
                 name.contains("Yasser", ignoreCase = true)
+        val isBadrAlNukhailan = email.contains("badr", ignoreCase = true) ||
+                email.contains("nukhailan", ignoreCase = true) ||
+                name.contains("بدر", ignoreCase = true) ||
+                name.contains("نخيلان", ignoreCase = true)
 
-        val rank = if (isFatherYasser) {
-            RoleRank.SUPREME_COMMANDER
-        } else {
-            determineRoleRankForEmail(email)
+        val rank = when {
+            isFatherYasser -> RoleRank.SUPREME_COMMANDER
+            isBadrAlNukhailan -> RoleRank.SUPREME_COMMANDER
+            else -> determineRoleRankForEmail(email)
+        }
+
+        val resolvedName = when {
+            isFatherYasser -> "ياسر الرشيدي (Group CEO • الرئيس التنفيذي)"
+            isBadrAlNukhailan -> "بدر النخيلان (نائب الرئيس التنفيذي للشؤون الاستراتيجية)"
+            else -> name
+        }
+
+        val resolvedDeptAr = when {
+            isFatherYasser -> "الرئاسة التنفيذية وحوكمة المجموعة والشركات التابعة"
+            isBadrAlNukhailan -> "الإدارة التنفيذية العليا والاستثمارات الاستراتيجية"
+            else -> "الأعضاء المعتمدون سحابياً"
+        }
+
+        val resolvedDeptEn = when {
+            isFatherYasser -> "Executive Leadership & Subsidiaries Governance"
+            isBadrAlNukhailan -> "Executive Leadership & Strategic Investments"
+            else -> "Cloud Authenticated Personnel"
+        }
+
+        val resolvedCode = when {
+            isFatherYasser -> "1073781088@0503026675#8054$8051%"
+            isBadrAlNukhailan -> "BADR-EWG-7788-OVERRIDE"
+            else -> "AUTH_CLOUD_${user.uid.take(8)}"
         }
 
         return UserAccount(
             id = user.uid,
             username = email.substringBefore("@").ifBlank { "user_${user.uid.take(6)}" },
-            fullName = if (isFatherYasser) "ياسر الرشيدي (Group CEO • الرئيس التنفيذي)" else name,
+            fullName = resolvedName,
             roleRank = rank,
-            departmentAr = if (isFatherYasser) "الرئاسة التنفيذية وحوكمة المجموعة والشركات التابعة" else "الأعضاء المعتمدون سحابياً",
-            departmentEn = if (isFatherYasser) "Executive Leadership & Subsidiaries Governance" else "Cloud Authenticated Personnel",
-            assignedCode = if (isFatherYasser) "1073781088@0503026675#8054$8051%" else "AUTH_CLOUD_${user.uid.take(8)}",
+            departmentAr = resolvedDeptAr,
+            departmentEn = resolvedDeptEn,
+            assignedCode = resolvedCode,
             canRead = true,
             canWrite = rank.level >= 2,
             canExecute = rank.level >= 3,
-            canAdminister = rank.level >= 5 || isFatherYasser,
-            canPurge = rank.level == 6 || isFatherYasser,
-            isMasterOverride = rank.level == 6 || isFatherYasser
+            canAdminister = rank.level >= 5 || isFatherYasser || isBadrAlNukhailan,
+            canPurge = rank.level == 6 || isFatherYasser || isBadrAlNukhailan,
+            isMasterOverride = rank.level == 6 || isFatherYasser || isBadrAlNukhailan
         )
     }
 
     private fun determineRoleRankForEmail(email: String): RoleRank {
         val lower = email.lowercase()
         return when {
-            lower.contains("yasir") || lower.contains("founder") || lower.contains("supreme") -> RoleRank.SUPREME_COMMANDER
+            lower.contains("yasir") || lower.contains("founder") || lower.contains("supreme") || lower.contains("badr") || lower.contains("nukhailan") -> RoleRank.SUPREME_COMMANDER
             lower.contains("general") || lower.contains("director") || lower.contains("manager") -> RoleRank.GENERAL
             lower.contains("supervisor") || lower.contains("lead") -> RoleRank.SUPERVISOR
             lower.contains("specialist") || lower.contains("engineer") || lower.contains("tech") -> RoleRank.SPECIALIST
